@@ -12,8 +12,9 @@ test("server-renders the SDK homepage", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Diagnosis-as-Code for/);
+  assert.match(html, /Build guarded recovery for/);
   assert.match(html, /Deterministic first/);
+  assert.match(html, /Lumis SDK stays useful on its own/);
   assert.match(html, /View on GitHub/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/);
 });
@@ -25,4 +26,17 @@ test("server-renders structured documentation", async () => {
   assert.match(html, /Lumis SDK documentation/);
   assert.match(html, /Design principles/);
   assert.match(html, /Documentation page/);
+  assert.match(html, /Toggle documentation color theme/);
+  assert.match(html, /<details/);
+});
+
+test("server-renders nested framework concepts", async () => {
+  const [healing, lifecycle] = await Promise.all([
+    render("/docs/concepts/healing-as-code"),
+    render("/docs/architecture/lifecycle-contracts"),
+  ]);
+  assert.equal(healing.status, 200);
+  assert.equal(lifecycle.status, 200);
+  assert.match(await healing.text(), /A direction, not a shipped executor/);
+  assert.match(await lifecycle.text(), /Current orchestration/);
 });

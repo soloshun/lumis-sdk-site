@@ -173,7 +173,7 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
     ],
   },
   {
-    slug: "architecture/overview", group: "Build", label: "Architecture", title: "Architecture",
+    slug: "architecture/overview", group: "Architecture", label: "Overview", title: "Architecture",
     description: "Understand the dependency rule, package map, model boundary, and reference adapters.",
     sections: [
       { id: "dependency-rule", title: "Dependency rule", blocks: [
@@ -197,7 +197,7 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
     ],
   },
   {
-    slug: "configuration/project", group: "Build", label: "Configuration", title: "Project configuration",
+    slug: "configuration/project", group: "Configuration", label: "Project document", title: "Project configuration",
     description: "Configure local memory, reports, incident sources, rules, and model policy through a strict versioned public API.",
     sections: [
       { id: "project", title: "Project document", blocks: [
@@ -218,7 +218,7 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
     ],
   },
   {
-    slug: "configuration/rules", group: "Build", label: "Deterministic rules", title: "Deterministic rules",
+    slug: "configuration/rules", group: "Configuration", label: "Deterministic rules", title: "Deterministic rules",
     description: "Encode stable failure signatures, evidence gaps, and safe investigation steps in a versioned rule set.",
     sections: [
       { id: "example", title: "Rule-set document", blocks: [{ type: "code", language: "yaml", code: ruleConfig }] },
@@ -286,7 +286,7 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
     ],
   },
   {
-    slug: "safety/threat-model", group: "Project", label: "Safety", title: "Safety and threat model",
+    slug: "safety/threat-model", group: "Safety", label: "Threat model", title: "Safety and threat model",
     description: "Treat operational evidence and model output as untrusted data while preserving local control and honest truth state.",
     sections: [
       { id: "invariants", title: "Security invariants", blocks: [
@@ -338,6 +338,223 @@ uv build` },
       ]},
       { id: "gated", title: "Explicitly gated", blocks: [
         { type: "note", tone: "amber", title: "No execution shortcut", text: "Core remediation, default model behavior, remote telemetry, new core ports, and breaking configuration changes all require an RFC and security review." },
+      ]},
+    ],
+  },
+  {
+    slug: "getting-started/framework-workflow", group: "Getting started", label: "Framework workflow", title: "The framework workflow",
+    description: "See how incident context moves through deterministic diagnosis, optional reasoning, guarded proposals, verification, and confirmed learning.",
+    sections: [
+      { id: "inputs", title: "1. Normalize bounded context", blocks: [
+        { type: "p", text: "A consuming application creates IncidentInput and retrieves only the context required for the incident. ContextKind covers logs, metrics, lineage, schemas, runbooks, playbooks, code, and verification evidence." },
+        { type: "note", title: "Authority stays outside the payload", text: "Logs, tickets, runbooks, source code, and model output are untrusted data. Supplying content to the framework does not grant it filesystem, network, cloud, or execution authority." },
+      ]},
+      { id: "reasoning", title: "2. Diagnose deterministically first", blocks: [
+        { type: "p", text: "DiagnosisService evaluates ordered project rules first. A known match returns evidence references and explanation metadata. An unknown result can route to a ModelGateway only when both an enabled ModelUsePolicy and a gateway implementation are supplied." },
+        { type: "code", language: "text", code: `IncidentInput
+  → bounded context
+  → deterministic rules
+      ↳ known: structured DiagnosisResult
+      ↳ unknown: optional bounded ModelGateway
+  → human-readable report + unconfirmed memory` },
+      ]},
+      { id: "governance", title: "3. Propose and govern", blocks: [
+        { type: "p", text: "The guarded lifecycle can retrieve context, diagnose, request a recommendation-only ActionPlan from policy, record approval, record verification, and emit audit events. It does not execute the plan." },
+      ]},
+      { id: "learning", title: "4. Learn only from confirmation", blocks: [
+        { type: "p", text: "Operational memory starts as unconfirmed_hypothesis. A human resolution moves local memory to human_confirmed. The domain also defines verification_confirmed, rejected, and superseded truth states for future persistence work." },
+        { type: "note", tone: "green", title: "Expected outcome", text: "A complete current workflow produces inspectable diagnosis, reporting, memory, approval, verification, and audit state without making a false claim that production remediation occurred." },
+      ]},
+    ],
+  },
+  {
+    slug: "concepts/healing-as-code", group: "Concepts", label: "Healing-as-Code", title: "Healing-as-Code",
+    description: "Understand the long-term direction: a versioned, policy-controlled recovery lifecycle whose decisions and outcomes can be inspected.",
+    sections: [
+      { id: "direction", title: "A direction, not a shipped executor", blocks: [
+        { type: "p", text: "Healing-as-Code is the project’s direction from diagnosis toward detect, triage, diagnose, plan, approve, remediate, verify, and learn. Today Lumis SDK ships diagnosis-centered behavior and typed contracts for most guarded stages, but no core action executor." },
+        { type: "note", tone: "amber", title: "Do not overread the name", text: "An ActionPlan is a recommendation. Approval is recorded state. Verification records a bounded result. None of these contracts grants production authority or proves that an action ran." },
+      ]},
+      { id: "properties", title: "Required properties", blocks: [
+        { type: "list", items: ["Every executable action must come from a typed allowlist.", "Policy must evaluate risk before approval.", "High-risk and irreversible work cannot auto-approve.", "Audit events must make transitions inspectable.", "Execution must be idempotent and bounded.", "Verification must follow execution before recovery is confirmed.", "Learning must use confirmed outcomes, not model confidence."] },
+      ]},
+      { id: "roadmap", title: "How the roadmap approaches it", blocks: [
+        { type: "table", headers: ["Milestone", "Direction"], rows: [["v0.3", "RFC-governed plugin SDK and independently packaged evidence connector."], ["v0.4", "Typed playbooks, risk tiers, proposals, approval contracts, and sandbox demonstration."], ["v0.5", "Verifier port, persisted truth states, retrieval scoring, and replay evaluation."], ["v1.0", "Stable contracts, security review, tested ecosystem, and no unresolved lifecycle ambiguity."]] },
+      ]},
+    ],
+  },
+  {
+    slug: "concepts/deterministic-first", group: "Concepts", label: "Deterministic first", title: "Deterministic-first reasoning",
+    description: "Make known incident behavior reproducible and explainable before introducing probabilistic reasoning.",
+    sections: [
+      { id: "why", title: "Why deterministic first", blocks: [
+        { type: "p", text: "Known signatures should not require a remote model, variable output, or opaque prompt. Project rules are versioned, ordered, testable, and owned alongside the systems they describe." },
+      ]},
+      { id: "ordering", title: "Current evaluation contract", blocks: [
+        { type: "list", items: ["Rules sort by descending priority.", "Equal priorities retain declared configuration order.", "all_contains terms match case-insensitively against supplied log text.", "A match exposes rule ID, rule version, priority, matched terms, and evidence IDs.", "No match returns an honest unknown diagnosis rather than fabricating a cause."] },
+      ]},
+      { id: "model-fallback", title: "Where models fit", blocks: [
+        { type: "p", text: "A model is an optional escalation path for unknown cases. ModelUsePolicy bounds input characters, output tokens, tool calls, timeout, and prompt version. The provider returns schema-validated DiagnosisResult plus invocation metadata." },
+      ]},
+    ],
+  },
+  {
+    slug: "concepts/evidence-grounded", group: "Concepts", label: "Evidence grounded", title: "Evidence-grounded recovery",
+    description: "Keep observation, hypothesis, uncertainty, contradiction, and missing context visible throughout the recovery lifecycle.",
+    sections: [
+      { id: "vocabulary", title: "The evidence vocabulary", blocks: [
+        { type: "table", headers: ["Contract", "Meaning"], rows: [["EvidenceItem", "A bounded observation with source, detail, confidence, kind, optional reference, time, and attributes."], ["confirmed_facts", "Statements directly supported by supplied context."], ["root_cause_hypothesis", "A causal possibility that remains uncertain."], ["missing_evidence", "Context required to strengthen, contradict, or reject the hypothesis."], ["requires_human_review", "An explicit review boundary, true by default."]] },
+      ]},
+      { id: "confidence", title: "Confidence does not authorize action", blocks: [
+        { type: "p", text: "Deterministic-rule confidence is authored calibration, not a computed probability. Model confidence is also an unconfirmed claim. Risk, policy, approval, execution, verification, and truth state remain separate decisions." },
+      ]},
+      { id: "context", title: "Context stays bounded", blocks: [
+        { type: "p", text: "ContextProvider returns an IncidentContext containing named ContextItem values. Providers should retrieve only relevant data, enforce size and permission limits, and expose provenance without granting mutation authority." },
+      ]},
+    ],
+  },
+  {
+    slug: "concepts/operational-memory", group: "Concepts", label: "Operational memory", title: "Operational memory",
+    description: "Retain incident knowledge with visible truth state and transparent retrieval rather than silently promoting generated text into fact.",
+    sections: [
+      { id: "episode", title: "Incident episodes", blocks: [
+        { type: "p", text: "IncidentEpisode combines a portable incident, its DiagnosisResult, and TruthState. The SQLite reference adapter stores local reports and human resolutions; the public MemoryStore port keeps storage replaceable." },
+      ]},
+      { id: "truth", title: "Truth states", blocks: [
+        { type: "table", headers: ["State", "Meaning"], rows: [["unconfirmed_hypothesis", "Diagnosis retained without a confirmed resolution."], ["human_confirmed", "A person recorded the cause, action, and outcome."], ["verification_confirmed", "A verifier confirmed the outcome; persistence is roadmap work."], ["rejected", "The retained hypothesis was rejected."], ["superseded", "Newer confirmed knowledge replaced the record."]] },
+      ]},
+      { id: "retrieval", title: "Transparent retrieval", blocks: [
+        { type: "p", text: "MemoryQuery supports text plus optional classification and pipeline filters. MemoryMatch includes a non-negative score and human-readable scoring reasons. The current SQLite path uses transparent lexical search; semantic retrieval belongs behind an optional adapter." },
+      ]},
+    ],
+  },
+  {
+    slug: "architecture/ports-and-adapters", group: "Architecture", label: "Ports and adapters", title: "Ports and adapters",
+    description: "Trace the dependency direction that keeps incident and recovery semantics independent of infrastructure vendors.",
+    sections: [
+      { id: "rule", title: "Dependency direction", blocks: [
+        { type: "code", language: "text", code: `CLI / Python entry points
+          ↓ compose
+application services → domain contracts
+          ↓ call
+         ports ← adapters` },
+        { type: "p", text: "Domain depends only on Python, Pydantic, and standard-library types. Application coordinates domain and ports. Adapters implement local or provider-specific behavior. The CLI selects concrete adapters." },
+      ]},
+      { id: "boundaries", title: "What belongs where", blocks: [
+        { type: "table", headers: ["Layer", "Owns", "Must not own"], rows: [["Domain", "Incidents, evidence, diagnoses, plans, approvals, verification, truth", "Database, HTTP, CLI, cloud, agent SDK"], ["Application", "Use-case orchestration and lifecycle order", "SQLite, hosted products, provider SDKs"], ["Ports", "Provider-neutral capability protocols", "Concrete credentials or clients"], ["Adapters", "Deterministic rules, SQLite, Markdown, providers", "Core business semantics"], ["CLI", "Composition and user commands", "Reusable domain policy"]] },
+      ]},
+      { id: "extension", title: "Extension rule", blocks: [
+        { type: "p", text: "Substantial vendor connectors should ship as independent packages when practical. This keeps core installation small and makes permissions, trust, maintenance, and compatibility visible." },
+      ]},
+    ],
+  },
+  {
+    slug: "architecture/lifecycle-contracts", group: "Architecture", label: "Lifecycle contracts", title: "Guarded lifecycle contracts",
+    description: "Inspect the transport-neutral contracts for context, plans, approval, verification, audit, and lifecycle results.",
+    sections: [
+      { id: "domain", title: "Domain state", blocks: [
+        { type: "list", items: ["IncidentContext groups bounded ContextItem evidence.", "ActionPlan names an allowlisted playbook, risk, approval requirement, steps, and execution_allowed=false by default.", "ApprovalDecision records approved, rejected, or pending status plus approver and reason.", "VerificationResult records not_run, skipped, passed, or failed state plus checks and notes.", "AuditEvent records inspectable transition detail.", "LifecycleResult returns the complete non-executing run."] },
+      ]},
+      { id: "orchestration", title: "Current orchestration", blocks: [
+        { type: "code", language: "text", code: `get_context
+→ diagnose
+→ propose recommendation-only plan
+→ request approval
+→ record verification state
+→ return audit events
+
+# no executor call exists` },
+      ]},
+      { id: "invariants", title: "Recovery invariants", blocks: [
+        { type: "note", tone: "amber", title: "Future execution boundary", text: "Execution must require an approved, allowlisted action. Verification must follow execution. High-risk actions cannot auto-approve. Failed verification must escalate. Learning must use confirmed outcomes." },
+      ]},
+    ],
+  },
+  {
+    slug: "architecture/model-boundary", group: "Architecture", label: "Model boundary", title: "Optional model boundary",
+    description: "Integrate probabilistic reasoning without coupling the core to a provider or granting a model execution authority.",
+    sections: [
+      { id: "routing", title: "Routing conditions", blocks: [
+        { type: "p", text: "DiagnosisService calls ModelGateway only when the deterministic classification is unknown, model policy is enabled, and a gateway has been injected. Otherwise the deterministic result is returned." },
+      ]},
+      { id: "policy", title: "ModelUsePolicy", blocks: [
+        { type: "table", headers: ["Field", "Default"], rows: [["enabled", "false"], ["max_input_characters", "20,000"], ["max_output_tokens", "2,000"], ["max_tool_calls", "8"], ["timeout", "30 seconds"], ["prompt_version", "diagnosis-v1"]] },
+      ]},
+      { id: "audit", title: "Auditable output", blocks: [
+        { type: "p", text: "ModelInvocation pairs a schema-validated diagnosis with provider, model, prompt version, input character count, and optional output token count. Redaction and minimum-necessary context belong before provider invocation." },
+        { type: "note", title: "Framework-neutral", text: "Plain Python, Pydantic AI, LangGraph, Agno, or another runtime may implement or consume the boundary. None is a mandatory Lumis SDK core dependency." },
+      ]},
+    ],
+  },
+  {
+    slug: "architecture/framework-and-cookbooks", group: "Architecture", label: "Framework boundaries", title: "Framework, applications, and cookbooks",
+    description: "Separate reusable SDK capability from consuming applications, agent runtimes, synthetic scenarios, and hosted control planes.",
+    sections: [
+      { id: "core", title: "What the framework owns", blocks: [
+        { type: "list", items: ["Vendor-neutral incident and recovery contracts.", "Deterministic diagnosis and explanation.", "Provider-neutral model, memory, reporting, context, policy, approval, verification, and audit ports.", "Strict configuration, redaction, local reports, local memory, CLI, and test doubles."] },
+      ]},
+      { id: "consumer", title: "What consuming applications own", blocks: [
+        { type: "list", items: ["Monitoring and incident detection.", "Provider credentials and concrete connectors.", "Project-specific rules, runbooks, prompts, and playbooks.", "Agent runtime and model selection.", "Production orchestration, deployment, and access policy."] },
+      ]},
+      { id: "cookbooks", title: "Why cookbooks remain separate", blocks: [
+        { type: "p", text: "Cookbooks are executable learning and validation artifacts. They use synthetic data, own their optional dependencies, and demonstrate how an application consumes core interfaces. They are examples—not the product boundary and not production control planes." },
+      ]},
+    ],
+  },
+  {
+    slug: "reference/domain-models", group: "Reference", label: "Domain models", title: "Domain model reference",
+    description: "Review the strict, vendor-neutral Pydantic contracts exported from lumis_sdk.domain.",
+    sections: [
+      { id: "diagnosis", title: "Incident and diagnosis", blocks: [
+        { type: "table", headers: ["Type", "Purpose"], rows: [["IncidentInput", "Source tool, optional pipeline, environment, and raw payload."], ["EvidenceItem", "Claim-supported observation with provenance."], ["TriageResult", "Classification, severity, summary, and missing context."], ["DiagnosisResult", "Facts, hypothesis, confidence, evidence, gaps, next steps, method, and review flag."], ["ConfirmedResolution", "Human- or verifier-confirmed cause, action, outcome, and truth state."]] },
+      ]},
+      { id: "recovery", title: "Recovery state", blocks: [
+        { type: "table", headers: ["Type", "Purpose"], rows: [["ContextItem / IncidentContext", "Bounded evidence attached to one incident."], ["ActionPlan", "Recommendation-only allowlisted playbook proposal."], ["ApprovalDecision", "Explicit approval state."], ["VerificationResult", "Bounded verification state and checks."], ["LifecycleResult", "Complete output of one non-executing lifecycle run."]] },
+      ]},
+      { id: "strictness", title: "Strict contracts", blocks: [
+        { type: "p", text: "Public domain models reject unknown fields. This makes integration mistakes visible and prevents provider-specific data from silently leaking into core contracts." },
+      ]},
+    ],
+  },
+  {
+    slug: "reference/ports", group: "Reference", label: "Ports", title: "Port reference",
+    description: "Implement replaceable capabilities without changing the Lumis SDK domain or application layer.",
+    sections: [
+      { id: "ports", title: "Current public ports", blocks: [
+        { type: "table", headers: ["Port", "Responsibility"], rows: [["ModelGateway", "Return structured diagnosis and auditable invocation metadata."], ["MemoryStore", "Save incidents, record confirmed resolutions, and search with reasons."], ["ReportWriter", "Persist a human-readable diagnosis report."], ["ContextProvider", "Retrieve bounded evidence without mutation."], ["PolicyEvaluator", "Propose a recommendation-only action plan."], ["ApprovalProvider", "Record an explicit decision."], ["RecoveryVerifier", "Return verification state without remediation."], ["AuditTrail", "Record lifecycle transitions."]] },
+      ]},
+      { id: "compatibility", title: "Compatibility posture", blocks: [
+        { type: "p", text: "Ports are experimental pre-1.0 interfaces. Changes require compatibility notes. New core ports require an RFC because they expand the framework’s dependency and authority surface." },
+      ]},
+    ],
+  },
+  {
+    slug: "plugins/overview", group: "Extend", label: "Plugin SDK direction", title: "Plugin and connector direction",
+    description: "Understand the planned extension model without mistaking roadmap interfaces for implemented plugin discovery.",
+    sections: [
+      { id: "status", title: "Current status", blocks: [
+        { type: "note", tone: "amber", title: "Not implemented", text: "Python entry-point discovery, plugin manifests, compatibility negotiation, and trust labels are roadmap work. Today, applications inject port implementations directly." },
+      ]},
+      { id: "types", title: "Planned plugin types", blocks: [
+        { type: "list", items: ["Incident sources and evidence providers", "Memory stores and report writers", "Model gateways and redactors", "Policy evaluators and approval providers", "Future action executors and recovery verifiers"] },
+      ]},
+      { id: "trust", title: "Supply-chain requirements", blocks: [
+        { type: "p", text: "Discovery should not ship before manifests, compatibility checks, lazy loading, provenance, declared permissions, reusable contract tests, and official/community/experimental trust labels are designed and tested." },
+      ]},
+    ],
+  },
+  {
+    slug: "project/lumis-and-sdk", group: "Project", label: "Lumis SDK and Lumis", title: "Lumis SDK and Lumis",
+    description: "Understand the open-source framework boundary and the managed operating layer provided by Lumis at Qadim Labs.",
+    sections: [
+      { id: "comparison", title: "Two complementary layers", blocks: [
+        { type: "table", headers: ["Lumis SDK", "Lumis"], rows: [["Apache-2.0 Python framework", "Managed hosted platform"], ["Local and self-hosted workflows", "Multi-tenant team workflows"], ["Project-owned adapters and policies", "Managed connector fleet and approvals"], ["Local inspectable memory", "Hosted multi-user memory and audit"], ["Community support and extension", "Enterprise RBAC, SSO, runners, deployment, and support"]] },
+      ]},
+      { id: "independence", title: "Independence rule", blocks: [
+        { type: "p", text: "Lumis SDK must remain useful without a Lumis key. It must not make remote calls by default, hide essential local capability, emit telemetry without opt-in, include proprietary product code, or require a commercial database or model provider." },
+      ]},
+      { id: "flow", title: "Open-core contribution flow", blocks: [
+        { type: "p", text: "Generally useful primitives should be proposed and implemented publicly, released from Lumis SDK, and then consumed by Lumis. Product-specific UI, hosting, multi-tenancy, billing, and enterprise operations remain in the managed product." },
       ]},
     ],
   },

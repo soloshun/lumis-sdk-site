@@ -29,15 +29,21 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
       <aside className="docs-sidebar" aria-label="Documentation navigation">
         <div className="docs-version"><span>VERSION</span><b>0.0.1</b><small>PRE-ALPHA</small></div>
         {groups.map(({ group, pages }) => (
-          <div className="docs-group" key={group}><h2>{group}</h2>{pages.map((item) => (
-            <Link className={item.slug === page.slug ? "active" : ""} key={item.slug} href={item.slug === "overview" ? "/docs" : `/docs/${item.slug}`}>{item.label}</Link>
-          ))}</div>
+          <details className="docs-group" key={group} open={group === page.group}>
+            <summary>{group}<span aria-hidden="true">⌄</span></summary>
+            <div>{pages.map((item) => (
+              <div className="docs-nav-item" key={item.slug}>
+                <Link className={item.slug === page.slug ? "active" : ""} href={item.slug === "overview" ? "/docs" : `/docs/${item.slug}`}>{item.label}</Link>
+                {item.slug === page.slug && item.sections.length > 1 ? <div className="docs-subnav">{item.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</div> : null}
+              </div>
+            ))}</div>
+          </details>
         ))}
       </aside>
       <main className="docs-main" id="main">
         <MobileDocSelect current={page.slug} options={docs.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` }))} />
         <article className="docs-article">
-          <header><p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p><h1>{page.title}</h1><p>{page.description}</p></header>
+          <header><p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p><h1>{page.title}</h1><p>{page.description}</p><div className="docs-page-meta"><span>PRE-ALPHA</span><span>PYTHON 3.11+</span><a href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">EDIT ON GITHUB ↗</a></div></header>
           {page.sections.map((section) => (
             <section id={section.id} key={section.id}><h2>{section.title}</h2>{section.blocks.map((block, index) => <DocBlockView block={block} key={index} />)}</section>
           ))}

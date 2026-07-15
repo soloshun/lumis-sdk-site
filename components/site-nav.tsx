@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brand, GitHubMark } from "./brand";
+import { ThemeToggle } from "./theme-toggle";
 
 const GITHUB = "https://github.com/soloshun/lumis-sdk";
 
@@ -11,7 +12,8 @@ export function SiteNav() {
         <nav className="nav-links" aria-label="Primary navigation">
           <a href="#principles">Principles</a>
           <a href="#architecture">Architecture</a>
-          <a href="#cookbooks">Cookbooks</a>
+          <a href="#lifecycle">Lifecycle</a>
+          <a href="#framework">Framework</a>
           <Link href="/docs">Documentation</Link>
         </nav>
         <a className="nav-github" href={GITHUB} target="_blank" rel="noreferrer">
@@ -28,6 +30,7 @@ export function DocsNav() {
       <div className="docs-topbar-inner">
         <Brand docs />
         <nav aria-label="Documentation utilities">
+          <ThemeToggle />
           <Link href="/">SDK overview</Link>
           <a href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
         </nav>

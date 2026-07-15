@@ -20,8 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: "Lumis SDK",
-      title: "Lumis SDK — Diagnosis-as-Code for engineering systems",
-      description: "Deterministic-first, evidence-grounded incident diagnosis and guarded recovery workflows.",
+      title: "Lumis SDK — Open framework for guarded pipeline recovery",
+      description: "Vendor-agnostic primitives for deterministic-first diagnosis and guarded, agentic recovery workflows.",
       images: [{ url: socialImage, width: 1732, height: 909, alt: "Lumis SDK — Diagnosis-as-Code for engineering systems" }],
     },
     twitter: { card: "summary_large_image", images: [socialImage] },
@@ -31,7 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `(function(){try{var saved=localStorage.getItem('lumis-doc-theme');var theme=saved||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.docTheme=theme}catch(e){}})()` }} />
+        {children}
+      </body>
     </html>
   );
 }

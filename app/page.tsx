@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Architecture, Cookbooks, Footer, Hero, Lifecycle, Principles } from "@/components/home-sections";
+import { Architecture, Footer, Framework, Hero, Lifecycle, Principles } from "@/components/home-sections";
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
-  title: "Lumis SDK — Diagnosis-as-Code for engineering systems",
+  title: "Lumis SDK — Open framework for guarded pipeline recovery",
   description:
-    "An open-source, deterministic-first Python SDK for evidence-grounded incident diagnosis and guarded recovery workflows.",
+    "A vendor-agnostic Python framework for deterministic-first diagnosis and guarded, agentic recovery across data, ML, and software-delivery pipelines.",
 };
 
 export default function Home() {
@@ -17,7 +17,7 @@ export default function Home() {
         <Principles />
         <Architecture />
         <Lifecycle />
-        <Cookbooks />
+        <Framework />
       </main>
       <Footer />
     </>
