@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Architecture, Footer, Framework, Hero, Lifecycle, Principles } from "@/components/home-sections";
+import { Architecture, Footer, Framework, Hero, Learn, Lifecycle, Principles, Research } from "@/components/home-sections";
+import { Community } from "@/components/community";
+import { ScrollFX } from "@/components/scroll-fx";
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata: Metadata = {
@@ -11,6 +13,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
+      <ScrollFX />
       <SiteNav />
       <main id="main">
         <Hero />
@@ -18,6 +21,9 @@ export default function Home() {
         <Architecture />
         <Lifecycle />
         <Framework />
+        <Research />
+        <Learn />
+        <Community />
       </main>
       <Footer />
     </>

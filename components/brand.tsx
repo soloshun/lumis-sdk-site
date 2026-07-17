@@ -1,11 +1,17 @@
 import Link from "next/link";
-import Image from "next/image";
+
+export function Wordmark() {
+  return (
+    <span className="brand-word" aria-hidden="true">
+      Lum<span className="brand-i">ı<i /></span>s
+    </span>
+  );
+}
 
 export function Brand({ docs = false }: { docs?: boolean }) {
   return (
     <Link className="brand" href="/" aria-label="Lumis SDK home">
-      <Image className="brand-icon" src="/icon.svg" alt="" width={28} height={28} priority />
-      <span className="brand-word">lumis</span>
+      <Wordmark />
       <span className="brand-product">{docs ? "docs" : "sdk"}</span>
     </Link>
   );

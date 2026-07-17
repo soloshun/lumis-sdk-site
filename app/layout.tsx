@@ -32,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `(function(){try{var saved=localStorage.getItem('lumis-doc-theme');var theme=saved||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.docTheme=theme}catch(e){}})()` }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `(function(){try{var forced=new URLSearchParams(location.search).get('lumis-theme');var saved=localStorage.getItem('lumis-doc-theme');var theme=forced||saved||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.docTheme=theme}catch(e){}})()` }} />
         {children}
       </body>
     </html>

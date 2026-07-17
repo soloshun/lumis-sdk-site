@@ -2,9 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyCode } from "@/components/copy-code";
+import { CopyMarkdown } from "@/components/copy-markdown";
+import { DocsGroups } from "@/components/docs-groups";
+import { Mermaid } from "@/components/mermaid";
 import { MobileDocSelect } from "@/components/mobile-doc-select";
 import { DocsNav } from "@/components/site-nav";
-import { docs, getAdjacentDoc, getDoc, groups, type DocBlock } from "@/content/docs";
+import { SDK_VERSION, docs, getAdjacentDoc, getDoc, groups, toMarkdown, type DocBlock } from "@/content/docs";
+import { highlightCode } from "@/lib/highlight";
 
 export function generateStaticParams() {
   return [{ slug: [] }, ...docs.filter((page) => page.slug !== "overview").map((page) => ({ slug: page.slug.split("/") }))];
@@ -27,23 +31,30 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
     <div className="docs-shell">
       <DocsNav />
       <aside className="docs-sidebar" aria-label="Documentation navigation">
-        <div className="docs-version"><span>VERSION</span><b>0.0.1</b><small>PRE-ALPHA</small></div>
-        {groups.map(({ group, pages }) => (
-          <details className="docs-group" key={group} open={group === page.group}>
-            <summary>{group}<span aria-hidden="true">⌄</span></summary>
-            <div>{pages.map((item) => (
-              <div className="docs-nav-item" key={item.slug}>
-                <Link className={item.slug === page.slug ? "active" : ""} href={item.slug === "overview" ? "/docs" : `/docs/${item.slug}`}>{item.label}</Link>
-                {item.slug === page.slug && item.sections.length > 1 ? <div className="docs-subnav">{item.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</div> : null}
-              </div>
-            ))}</div>
-          </details>
-        ))}
+        <div className="docs-version"><span>VERSION</span><b>{SDK_VERSION}</b><small>PHASE 1</small></div>
+        <DocsGroups
+          groups={groups.map(({ group, pages }) => ({ group, pages: pages.map((item) => ({ slug: item.slug, label: item.label, nested: item.nested })) }))}
+          activeSlug={page.slug}
+          activeGroup={page.group}
+        />
+        <div className="docs-ai-note">
+          <span>FOR AI ASSISTANTS</span>
+          <a href="/llms.txt">llms.txt</a> · <a href="/llms-full.txt">llms-full.txt</a>
+        </div>
       </aside>
       <main className="docs-main" id="main">
         <MobileDocSelect current={page.slug} options={docs.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` }))} />
         <article className="docs-article">
-          <header><p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p><h1>{page.title}</h1><p>{page.description}</p><div className="docs-page-meta"><span>PRE-ALPHA</span><span>PYTHON 3.11+</span><a href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">EDIT ON GITHUB ↗</a></div></header>
+          <header>
+            <p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p>
+            <h1>{page.title}</h1>
+            <p>{page.description}</p>
+            <div className="docs-page-meta">
+              <span>PHASE 1 · PRE-1.0</span><span>PYTHON 3.11+</span>
+              <CopyMarkdown markdown={toMarkdown(page)} />
+              <a href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">EDIT ON GITHUB ↗</a>
+            </div>
+          </header>
           {page.sections.map((section) => (
             <section id={section.id} key={section.id}><h2>{section.title}</h2>{section.blocks.map((block, index) => <DocBlockView block={block} key={index} />)}</section>
           ))}
@@ -58,10 +69,41 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   );
 }
 
+const LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+// Renders plain text with [label](url) markdown links; everything else stays literal text.
+function Inline({ text }: { text: string }) {
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const match of text.matchAll(LINK_PATTERN)) {
+    const index = match.index ?? 0;
+    if (index > cursor) parts.push(text.slice(cursor, index));
+    const [, label, href] = match;
+    if (href.startsWith("/docs")) parts.push(<Link href={href} key={index}>{label}</Link>);
+    else if (href.startsWith("/")) parts.push(<a href={href} target="_blank" rel="noreferrer" key={index}>{label}</a>);
+    else parts.push(<a href={href} target="_blank" rel="noreferrer" key={index}>{label} ↗</a>);
+    cursor = index + match[0].length;
+  }
+  if (parts.length === 0) return text;
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <>{parts}</>;
+}
+
+function CodeBlock({ language, code }: { language: string; code: string }) {
+  const highlighted = highlightCode(code, language);
+  return (
+    <div className="doc-code">
+      <div><span>{language}</span><CopyCode code={code} /></div>
+      <pre>{highlighted ? <code className="hljs" dangerouslySetInnerHTML={{ __html: highlighted }} /> : <code>{code}</code>}</pre>
+    </div>
+  );
+}
+
 function DocBlockView({ block }: { block: DocBlock }) {
-  if (block.type === "p") return <p>{block.text}</p>;
-  if (block.type === "list") return <ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>;
-  if (block.type === "note") return <aside className={`doc-note ${block.tone || "blue"}`}><strong>{block.title}</strong><p>{block.text}</p></aside>;
-  if (block.type === "code") return <div className="doc-code"><div><span>{block.language}</span><CopyCode code={block.code} /></div><pre><code>{block.code}</code></pre></div>;
-  return <div className="doc-table-wrap"><table><thead><tr>{block.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{block.rows.map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody></table></div>;
+  if (block.type === "p") return <p><Inline text={block.text} /></p>;
+  if (block.type === "list") return <ul>{block.items.map((item) => <li key={item}><Inline text={item} /></li>)}</ul>;
+  if (block.type === "note") return <aside className={`doc-note ${block.tone || "blue"}`}><strong>{block.title}</strong><p><Inline text={block.text} /></p></aside>;
+  if (block.type === "code") return <CodeBlock language={block.language} code={block.code} />;
+  if (block.type === "diagram") return <Mermaid code={block.code} caption={block.caption} />;
+  return <div className="doc-table-wrap"><table><thead><tr>{block.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{block.rows.map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex}><Inline text={cell} /></td>)}</tr>)}</tbody></table></div>;
 }

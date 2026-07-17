@@ -14,6 +14,8 @@ export function SiteNav() {
           <a href="#architecture">Architecture</a>
           <a href="#lifecycle">Lifecycle</a>
           <a href="#framework">Framework</a>
+          <a href="#research">Research</a>
+          <a href="#community">Community</a>
           <Link href="/docs">Documentation</Link>
         </nav>
         <a className="nav-github" href={GITHUB} target="_blank" rel="noreferrer">
