@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { CopyCode } from "@/components/copy-code";
 import { CopyMarkdown } from "@/components/copy-markdown";
 import { DocsGroups } from "@/components/docs-groups";
+import { JsonLd } from "@/components/json-ld";
 import { Mermaid } from "@/components/mermaid";
 import { MobileDocSelect } from "@/components/mobile-doc-select";
 import { DocsNav } from "@/components/site-nav";
 import { SDK_VERSION, docs, getAdjacentDoc, getDoc, groups, toMarkdown, type DocBlock } from "@/content/docs";
 import { highlightCode } from "@/lib/highlight";
+import { absoluteUrl } from "@/lib/site";
 
 export function generateStaticParams() {
   return [{ slug: [] }, ...docs.filter((page) => page.slug !== "overview").map((page) => ({ slug: page.slug.split("/") }))];
@@ -18,7 +20,36 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const { slug } = await params;
   const page = getDoc(slug);
   if (!page) return {};
-  return { title: page.title, description: page.description };
+  const path = page.slug === "overview" ? "/docs" : `/docs/${page.slug}`;
+  return {
+    title: page.title,
+    description: page.description,
+    alternates: { canonical: path },
+    openGraph: {
+      type: "article",
+      url: path,
+      title: `${page.title} | Lumis SDK Documentation`,
+      description: page.description,
+      siteName: "Lumis SDK",
+      locale: "en_US",
+      images: [],
+    },
+    twitter: {
+      card: "summary",
+      title: `${page.title} | Lumis SDK Documentation`,
+      description: page.description,
+      images: [],
+    },
+    ...(page.slug === "project/research" ? {
+      other: {
+        citation_title: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
+        citation_author: ["Solomon Eshun", "Dennis Murage", "Sharleen Muoki", "Chih-Chun Chen", "Stephen Adjignon", "Matteo Staar", "Oliver Angélil"],
+        citation_publication_date: "2026/08/03",
+        citation_arxiv_id: "2608.01955",
+        citation_pdf_url: absoluteUrl("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf"),
+      },
+    } : {}),
+  };
 }
 
 export default async function DocsPage({ params }: { params: Promise<{ slug?: string[] }> }) {
@@ -26,9 +57,46 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   const page = getDoc(slug);
   if (!page) notFound();
   const adjacent = getAdjacentDoc(page.slug);
+  const path = page.slug === "overview" ? "/docs" : `/docs/${page.slug}`;
+  const pageUrl = absoluteUrl(path);
+  const breadcrumbItems = [
+    { "@type": "ListItem", position: 1, name: "Lumis SDK", item: absoluteUrl("/") },
+    { "@type": "ListItem", position: 2, name: "Documentation", item: absoluteUrl("/docs") },
+    ...(page.slug === "overview" ? [] : [{ "@type": "ListItem", position: 3, name: page.title, item: pageUrl }]),
+  ];
+  const docSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        "@id": `${pageUrl}#article`,
+        headline: page.title,
+        description: page.description,
+        url: pageUrl,
+        mainEntityOfPage: pageUrl,
+        inLanguage: "en",
+        isAccessibleForFree: true,
+        dateModified: "2026-08-23",
+        author: { "@type": "Person", name: "Solomon Eshun", url: "https://github.com/soloshun" },
+        publisher: { "@type": "Organization", name: "Qadim Labs" },
+        isPartOf: { "@type": "WebSite", name: "Lumis SDK", url: absoluteUrl("/") },
+        about: ["agentic self-healing", "data pipeline reliability", "guarded incident recovery", page.group],
+        ...(page.slug === "project/research" ? {
+          mainEntity: {
+            "@type": "ScholarlyArticle",
+            name: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
+            url: "https://arxiv.org/abs/2608.01955",
+            datePublished: "2026-08-03",
+          },
+        } : {}),
+      },
+      { "@type": "BreadcrumbList", itemListElement: breadcrumbItems },
+    ],
+  };
 
   return (
     <div className="docs-shell">
+      <JsonLd data={docSchema} />
       <DocsNav />
       <aside className="docs-sidebar" aria-label="Documentation navigation">
         <div className="docs-version"><span>VERSION</span><b>{SDK_VERSION}</b><small>PHASE 1</small></div>

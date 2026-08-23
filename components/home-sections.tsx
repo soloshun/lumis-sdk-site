@@ -12,10 +12,11 @@ export function Hero() {
       <div className="shell hero-layout">
         <div className="hero-copy">
           <div className="status-line"><span>OPEN SOURCE</span><span>APACHE-2.0</span><span>PYTHON 3.11+</span></div>
-          <h1>Build guarded recovery for <em>self-healing pipelines.</em></h1>
+          <h1>Agentic self-healing for <em>data &amp; AI pipelines.</em></h1>
           <p>
-            Lumis SDK is a vendor-agnostic Python framework for building agentic
-            recovery workflows across data, ML, and software-delivery systems—
+            Lumis SDK is an open-source, vendor-agnostic Python framework for
+            deterministic diagnosis and guarded recovery across data, ML, and
+            software-delivery pipelines—
             deterministic first, evidence grounded, model optional, and under
             explicit human and policy control.
           </p>
@@ -273,10 +274,11 @@ export function Footer() {
     <footer className="site-footer dark-zone">
       <div className="shell footer-inner">
         <Brand />
-        <p>Open-source primitives for guarded, agentic pipeline recovery.</p>
+        <p>Open-source agentic self-healing for data and AI pipelines.</p>
         <div>
           <Link href="/docs">Docs</Link>
           <a href="https://github.com/soloshun/lumis-sdk">GitHub</a>
+          <a href="https://pypi.org/project/lumis-sdk/">PyPI</a>
           <a href="/llms.txt">llms.txt</a>
           <a href="https://github.com/soloshun/lumis-sdk/blob/main/LICENSE">Apache-2.0</a>
         </div>

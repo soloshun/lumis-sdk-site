@@ -12,9 +12,11 @@ export function GET(request: Request) {
   const lines: string[] = [
     "# Lumis SDK",
     "",
-    `> Lumis SDK ${SDK_VERSION} is an Apache-2.0 open-source Python framework for deterministic-first, evidence-grounded incident diagnosis and guarded recovery across data, ML, and software-delivery pipelines. Models are optional, storage is local-first, and consequential actions stay behind explicit policy, approval, and verification boundaries.`,
+    `> Lumis SDK ${SDK_VERSION} is an Apache-2.0, vendor-agnostic Python framework for agentic self-healing across data, ML, and software-delivery pipelines. It combines deterministic-first, evidence-grounded incident diagnosis with guarded recovery, operational memory, explicit approval, verification, and governed learning. Models are optional, storage is local-first, and consequential actions stay behind explicit policy boundaries.`,
     "",
     `Repository: https://github.com/soloshun/lumis-sdk`,
+    `Python package: https://pypi.org/project/lumis-sdk/`,
+    `Research paper: https://arxiv.org/abs/2608.01955`,
     `Full documentation as one Markdown file: ${origin}/llms-full.txt`,
     "",
   ];

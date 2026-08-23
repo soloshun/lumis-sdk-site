@@ -12,7 +12,7 @@ test("server-renders the SDK homepage", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Build guarded recovery for/);
+  assert.match(html, /Agentic self-healing for/);
   assert.match(html, /Deterministic first/);
   assert.match(html, /Lumis SDK stays useful on its own/);
   assert.match(html, /LUMIS · COMING SOON/);
@@ -22,6 +22,10 @@ test("server-renders the SDK homepage", async () => {
   assert.match(html, /PUBLISHED ON arXiv · 2608\.01955/);
   assert.match(html, /Verified repetition becomes policy/);
   assert.match(html, /https:\/\/arxiv\.org\/abs\/2608\.01955/);
+  assert.match(html, /<title>Lumis SDK: Agentic Self-Healing for Data &amp; AI Pipelines<\/title>/);
+  assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/"/);
+  assert.match(html, /application\/ld\+json/);
+  assert.match(html, /SoftwareApplication/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/);
 });
 
@@ -37,6 +41,22 @@ test("server-renders structured documentation", async () => {
   assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
   assert.match(html, /class="docs-topbar"/);
   assert.doesNotMatch(html, /class="docs-topbar scroll-header/);
+  assert.match(html, /TechArticle/);
+});
+
+test("serves crawler discovery files", async () => {
+  const [robots, sitemap, manifest] = await Promise.all([
+    render("/robots.txt"),
+    render("/sitemap.xml"),
+    render("/manifest.webmanifest"),
+  ]);
+  assert.equal(robots.status, 200);
+  assert.equal(sitemap.status, 200);
+  assert.equal(manifest.status, 200);
+  assert.match(await robots.text(), /Sitemap: https:\/\/lumis-sdk-site\.vercel\.app\/sitemap\.xml/);
+  const sitemapXml = await sitemap.text();
+  assert.match(sitemapXml, /https:\/\/lumis-sdk-site\.vercel\.app\/docs\/project\/research/);
+  assert.match(await manifest.text(), /Agentic Self-Healing/);
 });
 
 test("server-renders the published research and learning loops", async () => {
