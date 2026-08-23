@@ -15,7 +15,13 @@ test("server-renders the SDK homepage", async () => {
   assert.match(html, /Build guarded recovery for/);
   assert.match(html, /Deterministic first/);
   assert.match(html, /Lumis SDK stays useful on its own/);
+  assert.match(html, /LUMIS · COMING SOON/);
+  assert.doesNotMatch(html, /lumis\.qadimlabs\.com/);
   assert.match(html, /View on GitHub/);
+  assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
+  assert.match(html, /PUBLISHED ON arXiv · 2608\.01955/);
+  assert.match(html, /Verified repetition becomes policy/);
+  assert.match(html, /https:\/\/arxiv\.org\/abs\/2608\.01955/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/);
 });
 
@@ -28,6 +34,23 @@ test("server-renders structured documentation", async () => {
   assert.match(html, /Documentation page/);
   assert.match(html, /Toggle documentation color theme/);
   assert.match(html, /<details/);
+  assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
+  assert.match(html, /class="docs-topbar"/);
+  assert.doesNotMatch(html, /class="docs-topbar scroll-header/);
+});
+
+test("server-renders the published research and learning loops", async () => {
+  const [research, architecture, memory] = await Promise.all([
+    render("/docs/project/research"),
+    render("/docs/architecture/overview"),
+    render("/docs/concepts/operational-memory"),
+  ]);
+  assert.equal(research.status, 200);
+  assert.equal(architecture.status, 200);
+  assert.equal(memory.status, 200);
+  assert.match(await research.text(), /Published preprint/);
+  assert.match(await architecture.text(), /Seven-layer reference architecture/);
+  assert.match(await memory.text(), /Five is an example, not a universal constant/);
 });
 
 test("server-renders nested framework concepts", async () => {

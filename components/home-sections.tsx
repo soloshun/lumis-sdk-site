@@ -22,6 +22,7 @@ export function Hero() {
           <div className="hero-actions">
             <Link className="button primary" href="/docs/getting-started/quickstart">Get started <span>→</span></Link>
             <a className="button secondary" href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">View on GitHub ↗</a>
+            <a className="button secondary" href="https://arxiv.org/abs/2608.01955" target="_blank" rel="noreferrer">Read the paper ↗</a>
           </div>
           <div className="install-line"><code><b>$</b> {INSTALL}</code><CopyCode code={INSTALL} /></div>
         </div>
@@ -46,7 +47,7 @@ export function Hero() {
           </div>
           <div className="recovery-outcome">
             <div><span>VERIFY</span><b>explicit result</b></div>
-            <div><span>LEARN</span><b>confirmed memory only</b></div>
+            <div><span>LEARN</span><b>memory + rule candidates</b></div>
             <small>NO CORE ACTION EXECUTOR</small>
           </div>
         </div>
@@ -122,6 +123,26 @@ export function Architecture() {
           </div>
         </div>
         <div className="architecture-note" data-reveal=""><span className="blue-pixel" />Domain and application packages import no observability, orchestration, cloud, model-provider, or agent SDK. Independent plugins attach through ports—discovery never grants authority.</div>
+        <div className="research-architecture" data-reveal="">
+          <div className="research-architecture-copy">
+            <p className="eyebrow">THE PAPER / SEVEN LOGICAL LAYERS</p>
+            <h3>Verified repetition becomes policy.</h3>
+            <p>Telemetry and incident memory ground deterministic policy and bounded agentic reasoning. Approved actions pass through guarded execution; verification then closes two learning loops.</p>
+          </div>
+          <ol className="layer-list" aria-label="Seven-layer reference architecture">
+            <li><b>01</b><span>Pipeline estate</span></li><li><b>02</b><span>Telemetry + signals</span></li>
+            <li><b>03</b><span>Incident memory</span></li><li><b>04</b><span>Policy + reasoning</span></li>
+            <li><b>05</b><span>Approval + governance</span></li><li><b>06</b><span>Guarded execution</span></li>
+            <li><b>07</b><span>Verification + learning</span></li>
+          </ol>
+          <div className="promotion-flow" aria-label="Recurring pattern promotion loop">
+            <div><small>VERIFIED EPISODES</small><strong>same pattern × N</strong><span>Example policy: 5 confirmed recurrences</span></div>
+            <i aria-hidden="true">→</i>
+            <div><small>PROMOTION GATE</small><strong>review + replay tests</strong><span>Threshold is project-configurable</span></div>
+            <i aria-hidden="true">→</i>
+            <div className="promoted"><small>DETERMINISTIC POLICY</small><strong>versioned rule</strong><span>Known incidents take the cheaper path</span></div>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -135,7 +156,7 @@ const stages = [
   ["Detect", "external / local input", "current"], ["Triage", "deterministic classification", "current"],
   ["Diagnose", "rules + optional model", "current"], ["Plan", "playbook proposals", "current"],
   ["Approve", "idempotent decisions", "current"], ["Remediate", "future RFC-gated work", "guard"],
-  ["Verify", "explicit truth records", "current"], ["Learn", "confirmed memory", "current"],
+  ["Verify", "explicit truth records", "current"], ["Learn", "memory + rule candidates", "current"],
 ];
 
 export function Lifecycle() {
@@ -167,9 +188,9 @@ export function Framework() {
         </div>
 
         <div className="sdk-lumis" data-reveal="stagger">
-          <div className="sdk-lumis-intro"><p className="eyebrow">OPEN SOURCE & MANAGED</p><h2>Lumis SDK stays useful on its own.</h2><p>Use the framework locally or self-host it. Move to Lumis by Qadim Labs when teams need a managed operating layer.</p></div>
+          <div className="sdk-lumis-intro"><p className="eyebrow">OPEN SOURCE / PLATFORM COMING SOON</p><h2>Lumis SDK stays useful on its own.</h2><p>Use the framework locally or self-host it today. The managed Lumis platform by Qadim Labs is still in development.</p></div>
           <div className="compare-panel"><span>LUMIS SDK</span><ul><li>Open-source framework</li><li>Local and self-hosted</li><li>Community adapters</li><li>Your infrastructure and policies</li></ul><Link href="/docs/project/lumis-and-sdk">Understand the boundary →</Link></div>
-          <div className="compare-panel managed"><span>LUMIS</span><ul><li>Hosted team workflows</li><li>Managed integrations and memory</li><li>Approvals, audit, and runners</li><li>Enterprise deployment and support</li></ul><a href="https://lumis.qadimlabs.com">Explore Lumis ↗</a></div>
+          <div className="compare-panel managed"><span>LUMIS · COMING SOON</span><ul><li>Hosted team workflows</li><li>Managed integrations and memory</li><li>Approvals, audit, and runners</li><li>Enterprise deployment and support</li></ul><span className="coming-soon-label" aria-label="Lumis platform coming soon">PLATFORM IN DEVELOPMENT</span></div>
         </div>
       </div>
     </section>
@@ -189,18 +210,21 @@ export function Research() {
             maintainer—together with the open-source contributors who join in.
           </p>
         </div>
-        <a className="paper-card" data-reveal="" href="/research/agentic-self-healing-for-data-and-ai-pipelines.pdf" target="_blank" rel="noreferrer">
-          <div className="paper-card-head"><span>RESEARCH PAPER</span><span className="paper-status">PREPRINT IN SUBMISSION</span></div>
+        <article className="paper-card" data-reveal="">
+          <div className="paper-card-head"><span>RESEARCH PAPER</span><span className="paper-status">PUBLISHED ON arXiv · 2608.01955</span></div>
           <h3>Agentic Self-Healing for Data &amp; AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software</h3>
-          <p className="paper-authors">Solomon Eshun · et al. — ishango.ai / EnBW</p>
+          <p className="paper-authors">Solomon Eshun et al. · submitted 3 August 2026</p>
           <p className="paper-abstract">
-            The paper finds the gap in self-healing pipelines is architectural rather than
-            technological, and proposes a vendor-agnostic reference architecture combining
-            monitoring, pipeline metadata, incident history, deterministic policy checks,
-            AI-assisted diagnosis, approval workflows, and controlled remediation.
+            The paper proposes a seven-layer, vendor-agnostic architecture for guarded
+            self-healing. Verified outcomes enrich incident memory, while recurring
+            diagnosis-and-remediation patterns can be reviewed, tested, and promoted into
+            deterministic rules—making repeated incidents cheaper and more predictable.
           </p>
-          <span className="paper-cta">READ THE PAPER (PDF) ↓</span>
-        </a>
+          <div className="paper-actions">
+            <a className="paper-cta" href="https://arxiv.org/abs/2608.01955" target="_blank" rel="noreferrer">READ ON arXiv ↗</a>
+            <a className="paper-cta secondary" href="/research/agentic-self-healing-for-data-and-ai-pipelines.pdf" target="_blank" rel="noreferrer">DOWNLOAD PDF ↓</a>
+          </div>
+        </article>
       </div>
     </section>
   );

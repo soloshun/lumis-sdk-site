@@ -21,6 +21,7 @@ export const SDK_VERSION = "0.1.0-dev";
 export const RELEASED_VERSION = "0.0.8";
 export const GITHUB_REPO = "https://github.com/soloshun/lumis-sdk";
 export const PAPER_PDF = "/research/agentic-self-healing-for-data-and-ai-pipelines.pdf";
+export const PAPER_URL = "https://arxiv.org/abs/2608.01955";
 export const PAPER_TITLE = "Agentic Self-Healing for Data & AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software";
 
 const architectureDiagram = `flowchart LR
@@ -75,6 +76,16 @@ const lifecycleDiagram = `flowchart LR
     class D,T,DG,L shipped
     class P,A,V contract
     class R gated`;
+
+const researchArchitectureDiagram = `flowchart TD
+    L1[1 · Existing pipeline estate] --> L2[2 · Telemetry and signals]
+    L2 --> L3[3 · Incident memory and knowledge]
+    L3 --> L4[4 · Deterministic policy and agentic reasoning]
+    L4 --> L5[5 · Approval and governance]
+    L5 --> L6[6 · Guarded execution]
+    L6 --> L7[7 · Verification and learning]
+    L7 -. verified outcome .-> L3
+    L7 -. recurring pattern promoted to rule .-> L4`;
 
 const portsDiagram = `flowchart TD
     ENTRY[CLI and Python entry points] -- compose --> APP[Application services]
@@ -671,6 +682,16 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
       { id: "retrieval", title: "Transparent retrieval", blocks: [
         { type: "p", text: "MemoryQuery supports text plus optional classification and pipeline filters, and reusable_only=True restricts results to human- or verification-confirmed records. Every MemoryMatch carries a non-negative score, human-readable reasons (matched terms and truth state), and score_components separating the lexical, filter, and truth contributions—so ranking is explainable, not a black box. Semantic retrieval belongs behind an optional adapter, never as a hidden default." },
       ]},
+      { id: "promotion", title: "From verified pattern to deterministic rule", blocks: [
+        { type: "p", text: "The research architecture closes a second learning loop: when the same diagnosis-and-remediation pattern recurs across several verified episodes, it becomes a candidate for promotion into deterministic policy. Promotion is not an automatic model write. A project should aggregate only confirmed episodes, require an explicit recurrence threshold, generate a reviewable rule proposal, replay it against historical cases, and merge the rule through the normal version-control and review process." },
+        { type: "note", tone: "amber", title: "Five is an example, not a universal constant", text: "A team might open a promotion candidate after five equivalent, verification-confirmed episodes. The paper intentionally says recurring across several episodes; each project must configure a threshold and governance process suited to its risk profile." },
+        { type: "list", items: [
+          "Group episodes by stable failure signature, diagnosis, remediation, and verified outcome—not raw text similarity alone.",
+          "Exclude unconfirmed, rejected, superseded, failed, unknown, and timed-out outcomes from promotion evidence.",
+          "Attach provenance: contributing incident IDs, rule version, threshold, reviewer, replay results, and approval decision.",
+          "Keep the candidate inert until review and tests pass; promotion creates a versioned deterministic rule, never execution authority.",
+        ]},
+      ]},
       { id: "evaluation", title: "Replay evaluation", blocks: [
         { type: "p", text: "lumis_sdk.evaluation.evaluate_replay replays a corpus of ReplayCase values through the deterministic engine and returns exact match counts. Keep corpora synthetic or public, version them with the application, and report methodology with results—this is how rule changes are validated against history without touching production data." },
       ]},
@@ -680,8 +701,22 @@ uv run lumis memory search "KeyError customer_id" --config path/to/lumis.yml` },
   // ─── Architecture ──────────────────────────────────────────────────────────
   {
     slug: "architecture/overview", group: "Architecture", label: "Overview", title: "Architecture",
-    description: "Understand the dependency rule, package map, evidence and plugin boundaries, and the optional model path.",
+    description: "Connect the paper's seven-layer recovery architecture to the SDK's ports, adapters, evidence, memory, and policy boundaries.",
     sections: [
+      { id: "reference-architecture", title: "Seven-layer reference architecture", blocks: [
+        { type: "p", text: "The published paper separates the system into seven logical responsibility layers. Known, low-risk incidents pass through deterministic policy before any model is considered; ambiguous incidents may use bounded agentic reasoning. Approval and guarded execution remain separate from reasoning, and verification closes the learning loop." },
+        { type: "diagram", code: researchArchitectureDiagram, caption: "Two feedback paths: verified outcomes enrich memory; recurring verified patterns become deterministic-rule candidates" },
+        { type: "table", headers: ["Layer", "Responsibility"], rows: [
+          ["1 · Existing pipeline estate", "The orchestrators, data systems, ML workflows, and delivery infrastructure being healed remain unchanged."],
+          ["2 · Telemetry and signals", "Metrics, alerts, logs, traces, lineage, metadata, and data-quality signals provide live evidence."],
+          ["3 · Incident memory and knowledge", "Confirmed incident history, versioned runbooks, playbooks, schemas, contracts, and owners ground decisions."],
+          ["4 · Deterministic policy and agentic reasoning", "Rules handle known incidents first; bounded reasoning handles ambiguity across evidence and history."],
+          ["5 · Approval and governance", "Risk tiers, human decisions, and audit records determine whether a proposed action may proceed."],
+          ["6 · Guarded execution", "Only allowlisted, limited, reversible, and auditable mechanisms may act."],
+          ["7 · Verification and learning", "Recovery checks establish truth, update memory, and surface recurring patterns for policy promotion."],
+        ]},
+        { type: "note", tone: "blue", title: "Reference architecture versus current SDK", text: "The paper describes the full technology-flexible architecture. Lumis SDK currently implements deterministic diagnosis and typed contracts across the guarded lifecycle; it does not ship an unrestricted action executor. Documentation labels present code, contracts, and research direction separately." },
+      ]},
       { id: "system-map", title: "System map", blocks: [
         { type: "p", text: "The canonical picture: project entry points compose the framework core, and the core reaches infrastructure only through replaceable ports implemented by local reference adapters or independent plugins." },
         { type: "diagram", code: architectureDiagram, caption: "Entry points, framework core, and local reference adapters" },
@@ -1437,10 +1472,15 @@ uv build` },
     description: "Lumis SDK is the open-source implementation companion to a peer-oriented research paper on agentic self-healing pipelines.",
     sections: [
       { id: "paper", title: "The paper", blocks: [
-        { type: "p", text: `Much of this framework is the direct implementation of "${PAPER_TITLE}" — research led by Solomon Eshun as lead author, with co-authors at ishango.ai and EnBW.` },
+        { type: "p", text: `Much of this framework is the open-source implementation companion to "${PAPER_TITLE}" by Solomon Eshun, Dennis Murage, Sharleen Muoki, Chih-Chun Chen, Stephen Adjignon, Matteo Staar, and Oliver Angélil.` },
         { type: "p", text: "The paper compares existing ZeroOps, observability, and AIOps platforms for pipeline monitoring, root-cause analysis, and automated remediation, and finds the main gap is architectural rather than technological: the ingredients for self-healing pipelines already exist but are fragmented across vendor-specific platforms. It proposes an affordable, vendor-agnostic reference architecture — agentic recovery and incident response — combining monitoring, pipeline metadata, incident history, deterministic policy checks, AI-assisted diagnosis, approval workflows, and controlled remediation." },
-        { type: "p", text: `[Read the paper (PDF)](${PAPER_PDF})` },
-        { type: "note", tone: "amber", title: "Preprint status", text: "This manuscript has been submitted for preprint publication. Once it is live, this page will link to the published preprint and the PDF will be replaced with the final version." },
+        { type: "p", text: `[Read the published paper on arXiv](${PAPER_URL}) or [download the local PDF](${PAPER_PDF}).` },
+        { type: "note", tone: "green", title: "Published preprint", text: "Published on arXiv as 2608.01955 on 3 August 2026. The public arXiv record is the canonical citation; the bundled PDF is available for convenient offline reading." },
+      ]},
+      { id: "learning-loops", title: "The two learning loops", blocks: [
+        { type: "p", text: "The first loop writes every verified episode—symptoms, diagnosis, action, approval, outcome, verification, and final resolution—back into incident memory with provenance. Future incidents can retrieve this accumulated knowledge to ground diagnosis." },
+        { type: "p", text: "The second loop promotes recurring, verified diagnosis-and-remediation patterns from Layer 7 into candidate deterministic rules in Layer 4. In practice this should be a governed pipeline: configurable recurrence threshold, equivalence checks, provenance, human review, replay tests, and a version-controlled merge. Once approved, the known incident takes the deterministic path before model reasoning." },
+        { type: "note", tone: "amber", title: "Configurable recurrence policy", text: "Five confirmed recurrences is a useful example configuration, not a threshold claimed by the paper. Safety-critical projects may require more evidence, stronger tests, or mandatory reviewers." },
       ]},
       { id: "paper-to-framework", title: "From paper to framework", blocks: [
         { type: "table", headers: ["Paper concept", "Where it lives in the SDK"], rows: [
@@ -1449,7 +1489,7 @@ uv build` },
           ["Bounded, provenance-carrying context", "EvidenceService, the EvidenceProvider port, and redaction."],
           ["AI-assisted diagnosis under budgets", "The optional ModelGateway behind an explicit ModelUsePolicy."],
           ["Approval workflows and controlled remediation", "Playbooks, default-deny policy, evidence-linked proposals, and idempotent approvals—no core executor."],
-          ["Incident history and organizational learning", "Operational memory with explicit truth states and verification-aware learning."],
+          ["Incident history and organizational learning", "Operational memory with explicit truth states, verification-aware learning, and governed deterministic-rule candidates."],
         ]},
       ]},
       { id: "maintainer", title: "Authorship and maintenance", blocks: [
@@ -1459,11 +1499,12 @@ uv build` },
   },
   {
     slug: "project/lumis-and-sdk", group: "Project", label: "Lumis SDK and Lumis", title: "Lumis SDK and Lumis",
-    description: "Understand the open-source framework boundary and the managed operating layer provided by Lumis at Qadim Labs.",
+    description: "Understand the open-source framework boundary and the planned managed Lumis platform from Qadim Labs.",
     sections: [
       { id: "comparison", title: "Two complementary layers", blocks: [
+        { type: "note", tone: "amber", title: "Lumis platform coming soon", text: "The managed Lumis platform is still in development and does not yet have a public marketing link. This page describes its intended boundary so contributors can distinguish planned platform capabilities from what the open-source SDK ships today." },
         { type: "table", headers: ["Lumis SDK", "Lumis"], rows: [
-          ["Apache-2.0 Python framework", "Managed hosted platform"],
+          ["Apache-2.0 Python framework", "Planned managed hosted platform — coming soon"],
           ["Local and self-hosted workflows", "Multi-tenant team workflows"],
           ["Project-owned adapters and policies", "Managed connector fleet and approvals"],
           ["Local inspectable memory", "Hosted multi-user memory and audit"],

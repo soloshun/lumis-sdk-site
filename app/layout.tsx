@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "Lumis SDK",
       title: "Lumis SDK — Open framework for guarded pipeline recovery",
       description: "Vendor-agnostic primitives for deterministic-first diagnosis and guarded, agentic recovery workflows.",
-      images: [{ url: socialImage, width: 1732, height: 909, alt: "Lumis SDK — Diagnosis-as-Code for engineering systems" }],
+      images: [{ url: socialImage, width: 1732, height: 909, alt: "Lumis SDK — guarded, deterministic-first recovery for data and AI pipelines" }],
     },
     twitter: { card: "summary_large_image", images: [socialImage] },
   };
