@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout } from "node:timers/promises";
 import { after, before, test } from "node:test";
+import { readFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 
 const PORT = 4397;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -20,6 +22,26 @@ before(async () => {
 });
 after(() => server?.kill());
 const render = path => fetch(`${BASE}${path}`, {redirect: "manual"});
+
+test("browser-only theme initialization is scoped to the root hydration boundary", async () => {
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  assert.match(layout, /<html\b[^>]*\bsuppressHydrationWarning\b/);
+  assert.doesNotMatch(layout, /<script\b[^>]*\bsuppressHydrationWarning\b/);
+  const html = await (await render("/")).text();
+  const bootstrap = html.match(/<script[^>]*>([^<]*lumis-doc-theme[^<]*)<\/script>/)?.[1];
+  assert.ok(bootstrap, "theme bootstrap is included before page hydration");
+  for (const [search, saved, systemDark, expected] of [
+    ["", null, true, "dark"], ["", null, false, "light"],
+    ["", "light", true, "light"], ["", "dark", false, "dark"],
+    ["?lumis-theme=light", "dark", true, "light"],
+    ["?lumis-theme=dark", "light", false, "dark"],
+  ]) {
+    const document = {documentElement: {dataset: {}}};
+    runInNewContext(bootstrap, {document, location: {search}, URLSearchParams,
+      localStorage: {getItem: () => saved}, matchMedia: () => ({matches: systemDark})}, {timeout: 1000});
+    assert.equal(document.documentElement.dataset.docTheme, expected);
+  }
+});
 
 test("homepage communicates the current investigation boundary and accurate source install", async () => {
   const response = await render("/");
