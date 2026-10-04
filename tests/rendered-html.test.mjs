@@ -1,85 +1,136 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { spawn } from "node:child_process";
+import { setTimeout } from "node:timers/promises";
+import { after, before, test } from "node:test";
 
-async function render(pathname = "/") {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-  return worker.fetch(new Request(`http://localhost${pathname}`, { headers: { accept: "text/html" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
-}
+const PORT = 4397;
+const BASE = `http://127.0.0.1:${PORT}`;
+let server;
+let output = "";
+before(async () => {
+  server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", String(PORT), "--hostname", "127.0.0.1"], {stdio: ["ignore", "pipe", "pipe"]});
+  server.stdout.on("data", chunk => { output += chunk; });
+  server.stderr.on("data", chunk => { output += chunk; });
+  for (let i = 0; i < 100; i++) {
+    if (server.exitCode !== null) throw new Error(output);
+    try { if ((await fetch(BASE)).ok) return; } catch {}
+    await setTimeout(100);
+  }
+  throw new Error(`Production server failed to become ready: ${output}`);
+});
+after(() => server?.kill());
+const render = path => fetch(`${BASE}${path}`, {redirect: "manual"});
 
-test("server-renders the SDK homepage", async () => {
-  const response = await render();
+test("homepage communicates the current investigation boundary and accurate source install", async () => {
+  const response = await render("/");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Agentic self-healing for/);
-  assert.match(html, /Deterministic first/);
-  assert.match(html, /Lumis SDK stays useful on its own/);
-  assert.match(html, /LUMIS · COMING SOON/);
-  assert.doesNotMatch(html, /lumis\.qadimlabs\.com/);
-  assert.match(html, /View on GitHub/);
+  assert.match(html, /Operational intelligence/);
+  assert.match(html, /Grounded in evidence/);
+  assert.match(html, /Models propose/);
+  assert.match(html, /Lumis tests/);
+  assert.match(html, /--branch dev/);
   assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
-  assert.match(html, /PUBLISHED ON arXiv · 2608\.01955/);
-  assert.match(html, /Verified repetition becomes policy/);
-  assert.match(html, /https:\/\/arxiv\.org\/abs\/2608\.01955/);
-  assert.match(html, /<title>Lumis SDK: Agentic Self-Healing for Data &amp; AI Pipelines<\/title>/);
-  assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/"/);
-  assert.match(html, /application\/ld\+json/);
-  assert.match(html, /SoftwareApplication/);
-  assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/);
+  assert.match(html, /LUMIS PLATFORM · COMING SOON/);
+  assert.match(html, /unconfirmed_hypothesis/);
+  assert.match(html, /id="research"/);
+  assert.match(html, /id="community"/);
+  assert.match(html, /Star on GitHub/);
+  assert.match(html, /DOWNLOAD PDF/);
+  const paper = await render("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf");
+  assert.equal(paper.status, 200);
+  assert.match(paper.headers.get("content-type"), /application\/pdf/);
+  assert.match(html, /Sample operational dependency graph/);
+  assert.match(html, /Evidence categories—not confidence scores/);
+  assert.doesNotMatch(html, /uv add lumis-sdk|13 RUNNABLE COOKBOOKS|softwareVersion|pypi.org|diagnose --config/);
+  assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
+  assert.match(html, /<title>Lumis SDK: Evidence-Grounded Operational Intelligence<\/title>/);
+  assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/?"/);
+  const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1]));
+  assert.ok(schemas.some(schema => schema["@graph"]?.some(item => item.codeRepository?.endsWith("/lumis-sdk"))));
 });
 
-test("server-renders structured documentation", async () => {
-  const response = await render("/docs");
+test("the original visual palette remains intact", async () => {
+  const html = await (await render("/")).text();
+  const sheets = [...html.matchAll(/href="([^"]+\.css(?:\?[^"]*)?)"/g)].map(match => match[1]);
+  const css = (await Promise.all(sheets.map(async url => (await render(url)).text()))).join("\n");
+  assert.match(css, /--signal:\s*#2962ff/i);
+  assert.match(css, /--signal-soft:\s*#7aa2ff/i);
+  assert.doesNotMatch(css, /#245f5b|#9fbbb8|#263229/i);
+});
+
+const pages = ["", "quickstart", "architecture", "investigation", "configuration", "connectors", "api", "safety", "project"];
+test("all nine documentation pages are server-rendered with unique canonicals and stable header", async () => {
+  for (const slug of pages) {
+    const path = `/docs${slug ? `/${slug}` : ""}`;
+    const response = await render(path);
+    assert.equal(response.status, 200, path);
+    const html = await response.text();
+    assert.match(html, /TechArticle/);
+    assert.match(html, /BreadcrumbList/);
+    assert.match(html, /class="docs-topbar"/);
+    assert.doesNotMatch(html, /docs-topbar scroll-header|PHASE 1/);
+    assert.match(html, /Toggle documentation color theme/);
+    assert.match(html, /<details/);
+    assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
+    assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk-site.vercel.app${path}"`));
+    assert.equal((html.match(/<h1[ >]/g) || []).length, 1, path);
+    assert.match(html, /\/og/);
+  }
+});
+
+test("current SDK details include change evidence, SQL, conflicting roots, and uncertainty", async () => {
+  const connectorHtml = await (await render("/docs/connectors")).text();
+  const investigationHtml = await (await render("/docs/investigation")).text();
+  assert.match(connectorHtml, /Recent changes as checkable evidence/);
+  assert.match(connectorHtml, /Read-only|read-only PostgreSQL/);
+  assert.match(connectorHtml, /ScalingReplicaSet/);
+  assert.match(investigationHtml, /Competing supported roots yield insufficient_evidence/);
+  assert.match(investigationHtml, /quality: degraded/);
+  assert.match(investigationHtml, /No|no|never/);
+});
+
+test("crawler discovery contains only the new current pages", async () => {
+  const robots = await (await render("/robots.txt")).text();
+  const sitemap = await (await render("/sitemap.xml")).text();
+  const manifest = await (await render("/manifest.webmanifest")).json();
+  assert.match(robots, /Sitemap: https:\/\/lumis-sdk-site\.vercel\.app\/sitemap\.xml/);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, 10);
+  assert.match(sitemap, /2026-10-04/);
+  for (const slug of pages.filter(Boolean)) assert.ok(sitemap.includes(`/docs/${slug}</loc>`));
+  assert.doesNotMatch(sitemap, /lifecycle-contracts|project\/research|cookbooks/);
+  assert.match(manifest.name, /Operational Intelligence/);
+});
+
+test("legacy bookmarks permanently redirect without implying retired API support", async () => {
+  for (const [old, current] of [["getting-started/quickstart", "quickstart"], ["architecture/overview", "architecture"], ["concepts/healing-as-code", "project"], ["project/research", "project"], ["python-api/plugins", "project"], ["overview", ""]]) {
+    const response = await render(`/docs/${old}`);
+    assert.equal(response.status, 308, old);
+    assert.equal(response.headers.get("location"), `/docs${current ? `/${current}` : ""}`);
+  }
+  assert.equal((await render("/docs/not-a-real-page")).status, 404);
+});
+
+test("AI-readable documents use canonical URLs and the current SDK architecture", async () => {
+  const index = await (await render("/llms.txt")).text();
+  const full = await (await render("/llms-full.txt")).text();
+  assert.match(index, /evidence-grounded operational intelligence/);
+  assert.match(index, /YamlProject.handle_incident/);
+  assert.match(index, /https:\/\/lumis-sdk-site\.vercel\.app\/docs\/quickstart/);
+  assert.doesNotMatch(index, /127\.0\.0\.1|Python package:/);
+  assert.match(full, /lumis.dev\/operational-v1alpha1/);
+  assert.match(full, /Recent changes as checkable evidence/);
+  assert.match(full, /unconfirmed_hypothesis/);
+  assert.doesNotMatch(full, /run_guarded_lifecycle|lumis.dev\/v1/);
+});
+
+test("social preview is a freshly rendered PNG, and old image URLs redirect", async () => {
+  const response = await render("/og");
   assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.match(html, /Lumis SDK documentation/);
-  assert.match(html, /Design principles/);
-  assert.match(html, /Documentation page/);
-  assert.match(html, /Toggle documentation color theme/);
-  assert.match(html, /<details/);
-  assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
-  assert.match(html, /class="docs-topbar"/);
-  assert.doesNotMatch(html, /class="docs-topbar scroll-header/);
-  assert.match(html, /TechArticle/);
-});
-
-test("serves crawler discovery files", async () => {
-  const [robots, sitemap, manifest] = await Promise.all([
-    render("/robots.txt"),
-    render("/sitemap.xml"),
-    render("/manifest.webmanifest"),
-  ]);
-  assert.equal(robots.status, 200);
-  assert.equal(sitemap.status, 200);
-  assert.equal(manifest.status, 200);
-  assert.match(await robots.text(), /Sitemap: https:\/\/lumis-sdk-site\.vercel\.app\/sitemap\.xml/);
-  const sitemapXml = await sitemap.text();
-  assert.match(sitemapXml, /https:\/\/lumis-sdk-site\.vercel\.app\/docs\/project\/research/);
-  assert.match(await manifest.text(), /Agentic Self-Healing/);
-});
-
-test("server-renders the published research and learning loops", async () => {
-  const [research, architecture, memory] = await Promise.all([
-    render("/docs/project/research"),
-    render("/docs/architecture/overview"),
-    render("/docs/concepts/operational-memory"),
-  ]);
-  assert.equal(research.status, 200);
-  assert.equal(architecture.status, 200);
-  assert.equal(memory.status, 200);
-  assert.match(await research.text(), /Published preprint/);
-  assert.match(await architecture.text(), /Seven-layer reference architecture/);
-  assert.match(await memory.text(), /Five is an example, not a universal constant/);
-});
-
-test("server-renders nested framework concepts", async () => {
-  const [healing, lifecycle] = await Promise.all([
-    render("/docs/concepts/healing-as-code"),
-    render("/docs/architecture/lifecycle-contracts"),
-  ]);
-  assert.equal(healing.status, 200);
-  assert.equal(lifecycle.status, 200);
-  assert.match(await healing.text(), /A direction, not a shipped executor/);
-  assert.match(await lifecycle.text(), /Current orchestration/);
+  assert.match(response.headers.get("content-type"), /image\/png/);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  assert.deepEqual([...bytes.slice(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  const old = await render("/og.png");
+  assert.equal(old.status, 308);
+  assert.equal(old.headers.get("location"), "/og");
 });

@@ -535,3 +535,79 @@ html[data-doc-theme="dark"] .docs-mobile-nav select { border-color: var(--docs-r
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+/* Current SDK examples retain the original blue/graphite visual language. */
+.source-install { margin-top: 2rem; border: 1px solid var(--edge-dark); background: #090b10; padding: .9rem 1rem; }
+.source-install > div { display: flex; justify-content: space-between; align-items: center; color: var(--muted-dark); font: .55rem var(--font-geist-mono), monospace; letter-spacing: .1em; }
+.source-install pre, .start-command pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #cbd2dc; font: .68rem/1.85 var(--font-geist-mono), monospace; }
+.release-note { display: block; margin-top: .8rem; color: var(--muted-dark); font-size: .7rem; line-height: 1.6; }
+.investigation-instrument { min-width: 0; }
+.investigation-symptom { padding: .8rem .3rem 0; }
+.investigation-symptom > span, .evidence-row > span, .hypothesis-ledger > div, .review-result > span { color: var(--signal-soft); font: .53rem var(--font-geist-mono), monospace; letter-spacing: .1em; }
+.investigation-symptom h2 { margin: .65rem 0 0; font-size: 1.55rem; line-height: 1.2; letter-spacing: -.035em; }
+.operational-graph { margin: .7rem 0 1rem; border-block: 1px solid var(--edge-dark); background-image: radial-gradient(rgba(122,162,255,.2) .7px, transparent .7px); background-size: 18px 18px; }
+.operational-graph svg { display: block; width: 100%; height: auto; }
+.graph-edges { stroke: var(--signal-soft); stroke-width: 1.5; }
+.graph-node rect { fill: #0a0c11; stroke: rgba(122,162,255,.5); }
+.graph-node circle { fill: var(--signal); }
+.graph-node.affected rect { fill: #142044; stroke: var(--signal); stroke-width: 2; }
+.graph-node.affected circle { fill: var(--guard); }
+.graph-kind { fill: #929baa; font: 8px var(--font-geist-mono), monospace; }
+.graph-name { fill: #f5f6f8; font: 12px var(--font-geist-sans), sans-serif; font-weight: 550; }
+.graph-edge-labels { fill: var(--signal-soft); font: 7px var(--font-geist-mono), monospace; text-anchor: middle; }
+.operational-graph figcaption { display: flex; flex-wrap: wrap; gap: .65rem 1rem; justify-content: space-between; padding: .65rem .35rem; border-top: 1px solid var(--edge-dark); color: var(--muted-dark); font: .46rem var(--font-geist-mono), monospace; }
+.operational-graph figcaption i { display: inline-block; width: 5px; height: 5px; margin-right: .35rem; background: var(--signal); }
+.operational-graph figcaption i.incident-node { background: var(--guard); }
+.evidence-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem; border: 1px solid var(--edge-dark); padding: .8rem; }
+.evidence-row > span { flex-basis: 100%; }
+.evidence-row strong, .hypothesis-ledger b { font-size: .75rem; font-weight: 500; }
+.evidence-row > b { color: var(--guard); font: .5rem var(--font-geist-mono), monospace; }
+.hypothesis-ledger { padding: 1rem .4rem; }
+.hypothesis-ledger > div, .hypothesis-ledger p { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.hypothesis-ledger p { margin: .8rem 0; }
+.hypothesis-ledger em { font: .5rem var(--font-geist-mono), monospace; }
+.hypothesis-ledger .support { color: var(--signal-soft); }
+.hypothesis-ledger .unresolved { color: var(--guard); }
+.hypothesis-ledger > small { color: var(--muted-dark); font-size: .64rem; line-height: 1.6; }
+.review-result { border: 1px solid rgba(41,98,255,.5); background: rgba(41,98,255,.08); padding: 1rem; }
+.review-result > strong { display: flex; justify-content: space-between; margin: .65rem 0; font-size: .9rem; font-weight: 550; }
+.review-result code { color: var(--guard); font: .57rem var(--font-geist-mono), monospace; overflow-wrap: anywhere; }
+.instrument-caption { margin: .8rem .3rem 0; color: var(--muted-dark); font: .52rem/1.6 var(--font-geist-mono), monospace; }
+.text-link { display: inline-block; margin-top: 1.2rem; color: var(--signal); font: .7rem var(--font-geist-mono), monospace; }
+.dark-zone .text-link { color: var(--signal-soft); }
+.text-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+.section-intro > p:not(.eyebrow) { color: var(--muted); line-height: 1.7; }
+.dark-zone .section-intro > p:not(.eyebrow) { color: var(--muted-dark); }
+.current-investigation { grid-template-columns: repeat(5, 1fr); }
+.evidence-chart { display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; border: 1px solid var(--edge); background: #fff; margin: 3rem clamp(1.5rem,3vw,3rem) 0; padding: 2rem; }
+.evidence-chart h3 { margin: 0; font-size: 1.4rem; letter-spacing: -.035em; }
+.evidence-chart p:not(.eyebrow) { color: var(--muted); font-size: .85rem; line-height: 1.65; }
+.evidence-state-chart { align-self: center; }
+.evidence-chart-row { display: grid; grid-template-columns: 1.1fr .7fr 1fr; align-items: center; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid var(--edge); }
+.evidence-chart-row strong { font-size: .72rem; font-weight: 550; }
+.evidence-chart-row > span { display: flex; gap: 4px; }
+.evidence-chart-row i { width: 16px; height: 12px; background: #dbe6ff; border: 1px solid var(--signal); }
+.evidence-chart-row.unknown i { border: 1px dashed #ad7b27; background: #fff5df; }
+.evidence-chart-row b { color: var(--signal); font: .48rem var(--font-geist-mono), monospace; }
+.evidence-chart-row.unknown b { color: #8c6013; }
+.evidence-state-chart > small { display: block; margin-top: .9rem; font-size: .6rem; color: var(--muted); line-height: 1.6; }
+.offline-start { display: grid; grid-template-columns: .8fr 1.2fr; gap: 3rem; align-items: center; margin-top: 3rem; }
+.offline-start h3 { margin: 0; font-size: 1.7rem; letter-spacing: -.035em; }
+.offline-start p:not(.eyebrow) { color: var(--muted-dark); line-height: 1.7; font-size: .85rem; }
+.start-command { min-width: 0; border: 1px solid var(--edge-dark); background: #090b10; padding: 1.5rem; }
+.docs-article > header > p { color: var(--docs-copy); }
+@media (max-width: 760px) {
+  .current-investigation { grid-template-columns: 1fr; }
+  .evidence-chart, .offline-start { grid-template-columns: 1fr; gap: 1rem; }
+  .evidence-chart { padding: 1.25rem; margin-inline: 0; }
+  .evidence-chart-row { gap: .4rem; }
+  .evidence-chart-row i { width: 10px; }
+  .docs-topbar nav { gap: .8rem; font-size: .56rem; }
+}
+@media (max-width: 480px) {
+  .docs-topbar nav a:nth-of-type(2) { display: none; }
+  .wip-banner { padding-block: .5rem; }
+  .wip-banner strong { font-size: .55rem; letter-spacing: .05em; }
+  .wip-banner span { font-size: .63rem; }
+  .investigation-symptom h2 { font-size: 1.3rem; }
+}

@@ -105,7 +105,7 @@ export function Community() {
     <section className={`community dark-zone ${visible ? "is-visible" : ""}`} id="community" ref={sectionRef}>
       <div className="shell">
         <div className="section-heading split-heading reverse" data-reveal="">
-          <p>Lumis SDK is developed in the open under Apache-2.0. Every rule engine, contract, and safety boundary is reviewable—and shaped by the people who show up.</p>
+          <p>Lumis SDK is developed in the open under Apache-2.0. Every graph contract, evidence check, and safety boundary is reviewable—and shaped by the people who show up.</p>
           <div><p className="eyebrow">BUILT IN PUBLIC</p><h2>Open source,<br />from the first commit.</h2></div>
         </div>
 
@@ -118,7 +118,7 @@ export function Community() {
             </p>
             <div className="hero-actions">
               <a className="button primary" href={GITHUB} target="_blank" rel="noreferrer">Star on GitHub ★</a>
-              <Link className="button secondary" href="/docs/project/contributing">Contribute →</Link>
+              <Link className="button secondary" href="/docs/project#contribute">Contribute →</Link>
             </div>
             <div className="contributor-strip">
               <span className="community-label">CONTRIBUTORS</span>
@@ -137,14 +137,14 @@ export function Community() {
                     <img src={`${person.avatar_url}${person.avatar_url.includes("?") ? "&" : "?"}s=96`} alt={person.login} loading="lazy" width={44} height={44} />
                   </a>
                 ))}
-                <a className="contributor join" href={`${GITHUB}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer" data-name="This could be you" aria-label="Read the contributing guide">+</a>
+                <a className="contributor join" href={`${GITHUB}/blob/dev/CONTRIBUTING.md`} target="_blank" rel="noreferrer" data-name="This could be you" aria-label="Read the contributing guide">+</a>
               </div>
             </div>
           </div>
           <a className="star-board" href={`${GITHUB}/stargazers`} target="_blank" rel="noreferrer" aria-label="GitHub stargazers">
             <span className="community-label">GITHUB STARS</span>
             <DotMatrix text={stars === null ? "★" : `★${formatStars(stars)}`} lit={visible && stars !== null} />
-            <small>{stars === null ? "counting…" : "every one of them counted, dot by dot"}</small>
+            <small>{stars === null ? "Live count unavailable" : "every one of them counted, dot by dot"}</small>
           </a>
         </div>
 
@@ -167,7 +167,7 @@ export function Community() {
         </div>
 
         <div className="closing-cta" data-reveal="">
-          <div><p className="eyebrow">PRE-ALPHA / CONTRIBUTORS WELCOME</p><h2>Build the open foundation for trustworthy self-healing systems.</h2></div>
+          <div><p className="eyebrow">EXPERIMENTAL / CONTRIBUTORS WELCOME</p><h2>Build the open foundation for evidence-grounded operational intelligence.</h2></div>
           <div>
             <p>Apache-2.0 licensed, typed, local-first, and built in public.</p>
             <div className="hero-actions">

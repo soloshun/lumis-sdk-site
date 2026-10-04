@@ -46,10 +46,8 @@ export function SiteNav() {
         <div className="shell nav-inner">
           <Brand />
           <nav className="nav-links" aria-label="Primary navigation">
-            <a href="#principles">Principles</a>
             <a href="#architecture">Architecture</a>
-            <a href="#lifecycle">Lifecycle</a>
-            <a href="#framework">Framework</a>
+            <a href="#workflow">Workflow</a>
             <a href="#research">Research</a>
             <a href="#community">Community</a>
             <Link href="/docs">Documentation</Link>
@@ -72,7 +70,7 @@ export function DocsNav() {
           <Brand docs />
           <nav aria-label="Documentation utilities">
             <ThemeToggle />
-            <a href={PAPER} target="_blank" rel="noreferrer">Paper ↗</a>
+            <a href={PAPER} target="_blank" rel="noreferrer">Research ↗</a>
             <Link href="/">SDK overview</Link>
             <a href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>

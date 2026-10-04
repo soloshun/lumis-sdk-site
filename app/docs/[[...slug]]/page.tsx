@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CopyCode } from "@/components/copy-code";
 import { CopyMarkdown } from "@/components/copy-markdown";
 import { DocsGroups } from "@/components/docs-groups";
@@ -10,7 +10,7 @@ import { MobileDocSelect } from "@/components/mobile-doc-select";
 import { DocsNav } from "@/components/site-nav";
 import { SDK_VERSION, docs, getAdjacentDoc, getDoc, groups, toMarkdown, type DocBlock } from "@/content/docs";
 import { highlightCode } from "@/lib/highlight";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, CONTENT_UPDATED, SOCIAL_IMAGE } from "@/lib/site";
 
 export function generateStaticParams() {
   return [{ slug: [] }, ...docs.filter((page) => page.slug !== "overview").map((page) => ({ slug: page.slug.split("/") }))];
@@ -32,28 +32,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
       description: page.description,
       siteName: "Lumis SDK",
       locale: "en_US",
-      images: [],
+      images: [SOCIAL_IMAGE],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${page.title} | Lumis SDK Documentation`,
       description: page.description,
-      images: [],
+      images: [SOCIAL_IMAGE],
     },
-    ...(page.slug === "project/research" ? {
-      other: {
-        citation_title: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
-        citation_author: ["Solomon Eshun", "Dennis Murage", "Sharleen Muoki", "Chih-Chun Chen", "Stephen Adjignon", "Matteo Staar", "Oliver Angélil"],
-        citation_publication_date: "2026/08/03",
-        citation_arxiv_id: "2608.01955",
-        citation_pdf_url: absoluteUrl("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf"),
-      },
-    } : {}),
   };
 }
 
 export default async function DocsPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
+  if (slug?.join("/") === "overview") permanentRedirect("/docs");
   const page = getDoc(slug);
   if (!page) notFound();
   const adjacent = getAdjacentDoc(page.slug);
@@ -76,19 +68,11 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         mainEntityOfPage: pageUrl,
         inLanguage: "en",
         isAccessibleForFree: true,
-        dateModified: "2026-08-23",
+        dateModified: CONTENT_UPDATED,
         author: { "@type": "Person", name: "Solomon Eshun", url: "https://github.com/soloshun" },
         publisher: { "@type": "Organization", name: "Qadim Labs" },
         isPartOf: { "@type": "WebSite", name: "Lumis SDK", url: absoluteUrl("/") },
-        about: ["agentic self-healing", "data pipeline reliability", "guarded incident recovery", page.group],
-        ...(page.slug === "project/research" ? {
-          mainEntity: {
-            "@type": "ScholarlyArticle",
-            name: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
-            url: "https://arxiv.org/abs/2608.01955",
-            datePublished: "2026-08-03",
-          },
-        } : {}),
+        about: ["operational intelligence", "evidence-grounded incident investigation", "bounded investigation", page.group],
       },
       { "@type": "BreadcrumbList", itemListElement: breadcrumbItems },
     ],
@@ -99,7 +83,7 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
       <JsonLd data={docSchema} />
       <DocsNav />
       <aside className="docs-sidebar" aria-label="Documentation navigation">
-        <div className="docs-version"><span>VERSION</span><b>{SDK_VERSION}</b><small>PHASE 1</small></div>
+        <div className="docs-version"><span>SDK</span><b>{SDK_VERSION}</b><small>PoC</small></div>
         <DocsGroups
           groups={groups.map(({ group, pages }) => ({ group, pages: pages.map((item) => ({ slug: item.slug, label: item.label, nested: item.nested })) }))}
           activeSlug={page.slug}
@@ -111,16 +95,16 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         </div>
       </aside>
       <main className="docs-main" id="main">
-        <MobileDocSelect current={page.slug} options={docs.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` }))} />
+        <MobileDocSelect current={page.slug} options={groups.flatMap(({pages}) => pages.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` })))} />
         <article className="docs-article">
           <header>
             <p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p>
             <h1>{page.title}</h1>
             <p>{page.description}</p>
             <div className="docs-page-meta">
-              <span>PHASE 1 · PRE-1.0</span><span>PYTHON 3.11+</span>
+              <span>DEVELOPMENT · PRE-1.0</span><span>PYTHON 3.11+</span><span>UPDATED {CONTENT_UPDATED}</span>
               <CopyMarkdown markdown={toMarkdown(page)} />
-              <a href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">EDIT ON GITHUB ↗</a>
+              <a href="https://github.com/soloshun/lumis-sdk-site/blob/dev/content/docs.ts" target="_blank" rel="noreferrer">PAGE SOURCE ↗</a>
             </div>
           </header>
           {page.sections.map((section) => (

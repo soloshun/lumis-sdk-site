@@ -1,98 +1,56 @@
-# vinext-starter
+# Lumis SDK website
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+A one-page introduction and nine-page, bespoke documentation site for **evidence-grounded operational intelligence**. Built with Next.js, React, and TypeScript; deployed with Vercel's native Next.js build. Light/dark docs, persistent experimental notice, grouped navigation, rendered code, copyable Markdown, and a static social preview are included.
 
-## Prerequisites
+## Content truth
 
-- Node.js `>=22.13.0`
+The site follows the current SDK `dev` architecture, reviewed through `f42b8e8` on 2026-10-04, including the local notebook additions. Primary workflow: prepared graph → registered evidence → deterministic triage → optional bounded investigator → mechanical assessment → human review. SQL observations, typed Git/Kubernetes change records, and competing-root abstention are covered.
 
-## Quick Start
+The SDK is experimental and this architecture is not established as a published package-index release. Source metadata (`0.1.0rc1`) is not a publication claim. No automatic remediation, rule promotion, live OTLP receiver, or confirmed causal diagnosis is advertised. The earlier arXiv preprint is labelled foundational prior research. Platform links remain “coming soon”.
 
-```bash
-npm install
+Source references: sibling `lumis-sdk/README.md`, SDK docs/contracts, root `new_design_pattern.md`, `lumis_new_design_pattern_contd.md`, `working_lumis_products.md`, and the marketing site's operational-intelligence direction. SDK code overrides aspirational design notes and stale documentation where they conflict. The website does not modify the SDK, cookbooks, or marketing project.
+
+## Development
+
+Use Node 22.x.
+
+```sh
+npm ci
 npm run dev
-npm run build
+npm run lint
+npx tsc --noEmit
+npm test
 ```
 
-This starter does not use `wrangler.jsonc`.
+`npm test` builds with native Next.js and smoke-tests the production HTTP server. It checks all nine docs pages, current terminology, metadata, structured data, crawler outputs, AI-readable content, legacy redirects, and the generated social PNG. The test server uses localhost port 4397 and exits after the suite.
 
-## Included Shape
+## Editing
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- `components/home-sections.tsx`: concise homepage and illustrative investigation panel.
+- `content/docs.ts`: nine current pages, sections, source references, reading order, and Markdown export.
+- `components/site-nav.tsx`: permanent preview banner; only the main-page header hides on downward scroll.
+- `app/globals.css`: original graphite/blue/amber visual system and documentation themes.
+- `components/community.tsx`: original contribution, contributor, and live GitHub star section, with current SDK wording.
+- `lib/site.ts`: canonical origin, shared metadata, social image, and content update date.
+- `app/og/route.tsx`: text-accurate 1200×630 PNG preview, generated from code.
+- `next.config.ts`: permanent redirects for retired documentation and social-image URLs.
 
-## Workspace Auth Headers
+Update SDK claims, examples, site metadata, and AI-readable text together. Increment `CONTENT_UPDATED` when public content materially changes. Keep `llms.txt` and `llms-full.txt` based on the same docs source; they are readable context files, not a promise of search ranking.
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
+## Vercel and SEO
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+Select **Next.js** as the framework. Build with `npm run build` (or the checked-in `next build` override), and leave Output Directory at its Next.js default. Do not point Vercel at a Vite `dist` output. All active docs routes are prerendered; unknown pages return 404.
 
-Treat the full name as optional and fall back to email when it is absent:
+Original Cloudflare, database, and starter-auth files remain untouched. The active Vercel scripts use native Next.js; `.openai/hosting.json` is historical resource metadata, not the active Vercel deployment configuration. No external resources were deleted.
 
-```tsx
-import { headers } from "next/headers";
+Set `NEXT_PUBLIC_SITE_URL` to the final public origin (for example `https://sdk.example.com`) before building. `VERCEL_PROJECT_PRODUCTION_URL` is the fallback, followed by `https://lumis-sdk-site.vercel.app`. These drive canonical URLs, sitemap, JSON-LD, social metadata, and AI-readable links. Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` inject verification tags; registering Search Console and submitting the sitemap are separate owner actions.
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+Production metadata includes unique titles/descriptions/canonicals, WebSite and SoftwareApplication/SoftwareSourceCode JSON-LD, doc TechArticle/BreadcrumbList, robots, sitemap, manifest, and Open Graph/X cards. Vercel preview builds are marked noindex and robots-disallowed to avoid competing with production URLs. Retired API pages redirect to the migration guide rather than presenting old interfaces as current. Search rankings and indexing are not guaranteed.
 
-  const displayName = fullName ?? email;
-  // ...
-}
-```
+## Branch history and promotion
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+- `legacy/pre-operational-intelligence-2026-10-04` preserves old website commit `34f4e2f` unchanged.
+- `dev` contains the new website and current operational documentation.
+- `main` stays on the previous site until the new direction is reviewed and promoted.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Promote through a reviewed `dev` → `main` change after verification. A pushed branch is not evidence of a Vercel production deployment. Legacy branch content should be used from a separate checkout, not combined with current SDK contracts.

@@ -1,7 +1,10 @@
 import { SDK_VERSION, docs } from "@/content/docs";
+import { SITE_ORIGIN } from "@/lib/site";
 
-export function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+export const dynamic = "force-static";
+
+export function GET() {
+  const origin = SITE_ORIGIN;
   const byGroup = new Map<string, typeof docs>();
   for (const page of docs) {
     const list = byGroup.get(page.group) || [];
@@ -12,11 +15,15 @@ export function GET(request: Request) {
   const lines: string[] = [
     "# Lumis SDK",
     "",
-    `> Lumis SDK ${SDK_VERSION} is an Apache-2.0, vendor-agnostic Python framework for agentic self-healing across data, ML, and software-delivery pipelines. It combines deterministic-first, evidence-grounded incident diagnosis with guarded recovery, operational memory, explicit approval, verification, and governed learning. Models are optional, storage is local-first, and consequential actions stay behind explicit policy boundaries.`,
+    `> Lumis SDK (${SDK_VERSION}) is an experimental, Apache-2.0, vendor-neutral Python framework for evidence-grounded operational intelligence. It prepares an incident-scoped graph, tests known signatures, optionally invokes one bounded investigator, mechanically assesses falsifiable explanations, and returns a human-review report.`,
     "",
     `Repository: https://github.com/soloshun/lumis-sdk`,
-    `Python package: https://pypi.org/project/lumis-sdk/`,
-    `Research paper: https://arxiv.org/abs/2608.01955`,
+    `Current architecture: install a reviewed dev checkout, not an older package-index artifact.`,
+    `Primary API: YamlProject.handle_incident / lumis incident.`,
+    `Candidate-only comparison baseline: investigate / --use-model, not the tool-using agent.`,
+    `Boundaries: no remediation executor, automatic rule promotion, live OTLP receiver, or confirmed causal diagnosis. Suggestions are not applied. Probes are degraded synthetic evidence. Models are explicit opt-in.`,
+    `Supported candidates with competing roots remain insufficient_evidence; reports always require human review.`,
+    `Foundational prior research (not an exact current SDK contract): https://arxiv.org/abs/2608.01955`,
     `Full documentation as one Markdown file: ${origin}/llms-full.txt`,
     "",
   ];

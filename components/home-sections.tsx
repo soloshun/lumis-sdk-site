@@ -1,201 +1,99 @@
 import Link from "next/link";
-import { CopyCode } from "./copy-code";
 import { Brand } from "./brand";
+import { CopyCode } from "./copy-code";
 
-const INSTALL = "uv add lumis-sdk";
+const REPO = "https://github.com/soloshun/lumis-sdk";
+const START = `git clone --branch dev ${REPO}.git\ncd lumis-sdk\nuv sync --all-groups`;
 
 export function Hero() {
-  return (
-    <section className="hero dark-zone">
-      <div className="hero-grid" aria-hidden="true" />
-      <div className="hero-aurora" aria-hidden="true" />
-      <div className="shell hero-layout">
-        <div className="hero-copy">
-          <div className="status-line"><span>OPEN SOURCE</span><span>APACHE-2.0</span><span>PYTHON 3.11+</span></div>
-          <h1>Agentic self-healing for <em>data &amp; AI pipelines.</em></h1>
-          <p>
-            Lumis SDK is an open-source, vendor-agnostic Python framework for
-            deterministic diagnosis and guarded recovery across data, ML, and
-            software-delivery pipelines—
-            deterministic first, evidence grounded, model optional, and under
-            explicit human and policy control.
-          </p>
-          <div className="hero-actions">
-            <Link className="button primary" href="/docs/getting-started/quickstart">Get started <span>→</span></Link>
-            <a className="button secondary" href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">View on GitHub ↗</a>
-            <a className="button secondary" href="https://arxiv.org/abs/2608.01955" target="_blank" rel="noreferrer">Read the paper ↗</a>
-          </div>
-          <div className="install-line"><code><b>$</b> {INSTALL}</code><CopyCode code={INSTALL} /></div>
-        </div>
-
-        <div className="hero-instrument recovery-instrument" aria-label="Guarded recovery lifecycle">
-          <div className="instrument-head"><span>FIG. 01 / GUARDED RECOVERY FRAMEWORK</span><span className="live-dot">LOCAL READY</span></div>
-          <div className="signal-source">
-            <span>INCIDENT CONTEXT</span><code>logs · metrics · lineage · schema · code</code>
-          </div>
-          <div className="recovery-flow">
-            <FlowStep index="01" name="TRIAGE" detail="deterministic" state="live" />
-            <i aria-hidden="true" />
-            <FlowStep index="02" name="DIAGNOSE" detail="evidence + memory" state="live" />
-            <i aria-hidden="true" />
-            <FlowStep index="03" name="PLAN" detail="recommendation" state="contract" />
-            <i aria-hidden="true" />
-            <FlowStep index="04" name="APPROVE" detail="policy boundary" state="guard" />
-          </div>
-          <div className="instrument-layers">
-            <div><span>DETERMINISTIC PATH</span><strong>Known signatures remain explainable and reproducible.</strong><small>current foundation</small></div>
-            <div><span>OPTIONAL MODEL PATH</span><strong>Unknown cases may route through a bounded gateway.</strong><small>explicit opt-in</small></div>
-          </div>
-          <div className="recovery-outcome">
-            <div><span>VERIFY</span><b>explicit result</b></div>
-            <div><span>LEARN</span><b>memory + rule candidates</b></div>
-            <small>NO CORE ACTION EXECUTOR</small>
-          </div>
-        </div>
+  return <section className="hero dark-zone">
+    <div className="hero-grid" aria-hidden="true" />
+    <div className="hero-aurora" aria-hidden="true" />
+    <div className="shell hero-layout">
+      <div className="hero-copy">
+        <div className="status-line"><span>OPEN SOURCE / APACHE-2.0</span><span>EXPERIMENTAL · PYTHON 3.11+</span></div>
+        <h1>Operational intelligence.<em>Grounded in evidence.</em></h1>
+        <p>A vendor-neutral Python SDK for investigating complex systems. Connect the context, test competing explanations, and give engineers an inspectable account of what the evidence supports.</p>
+        <div className="hero-actions"><Link className="button primary" href="/docs/quickstart">Get started <span>→</span></Link><a className="button secondary" href={REPO}>View on GitHub ↗</a><a className="button secondary" href="https://arxiv.org/abs/2608.01955">Read the paper ↗</a></div>
+        <div className="source-install"><div><span>DEVELOPMENT CHECKOUT</span><CopyCode code={START} /></div><pre><code>{START}</code></pre></div>
+        <small className="release-note">The new architecture is on dev. An older package-index release is not this SDK.</small>
       </div>
-      <div className="hero-facts shell">
-        <span>NO REQUIRED CLOUD</span><span>NO REQUIRED MODEL</span><span>NO DEFAULT TELEMETRY</span><span>NO UNRESTRICTED ACTUATION</span>
-      </div>
-    </section>
-  );
+      <InvestigationInstrument />
+    </div>
+    <div className="hero-facts shell"><span>EVIDENCE FIRST</span><span>MODEL OPTIONAL</span><span>BOUNDED BY DESIGN</span><span>HUMAN REVIEW</span></div>
+  </section>;
 }
 
-function FlowStep({ index, name, detail, state }: { index: string; name: string; detail: string; state: string }) {
-  return <div className={`flow-step ${state}`}><small>{index}</small><span /><strong>{name}</strong><em>{detail}</em></div>;
+function InvestigationInstrument() {
+  return <div className="hero-instrument investigation-instrument" aria-label="Illustrative incident investigation, not a live system">
+    <div className="instrument-head"><span>INCIDENT / DEMO-001</span><span>SYNTHETIC WALKTHROUGH</span></div>
+    <div className="investigation-symptom"><span>01 / SCOPE THE CONTEXT</span><h2>Follow the relationships.<br />Test the explanation.</h2></div>
+    <OperationalGraph />
+    <div className="evidence-row"><span>02 / DETERMINISTIC TRIAGE</span><strong>Health signature</strong><b>MATCH · NONTERMINAL</b></div>
+    <div className="hypothesis-ledger"><div><span>03 / TEST EXPLANATIONS</span><span>EVIDENCE STATE</span></div><p><b>Service unavailability</b><em className="support">SUPPORTED</em></p><p><b>Underlying cause</b><em className="unresolved">UNRESOLVED</em></p><small>An observed symptom is not a complete causal explanation.</small></div>
+    <div className="review-result"><span>04 / REPORT, NOT REMEDIATE</span><strong>Human review required <span>↗</span></strong><code>truth_state: unconfirmed_hypothesis</code></div>
+    <p className="instrument-caption">Declared graph sample + synthetic health finding. Relationships are context, not proof of cause. No live system or model call.</p>
+  </div>;
+}
+
+function OperationalGraph() {
+  const nodes = [
+    {id: "dataset", x: 20, y: 26, name: "Input dataset", kind: "DATASET"},
+    {id: "flow", x: 180, y: 26, name: "Pipeline flow", kind: "WORKFLOW"},
+    {id: "host", x: 340, y: 26, name: "Worker host", kind: "RESOURCE"},
+    {id: "database", x: 20, y: 180, name: "PostgreSQL", kind: "DEPENDENCY"},
+    {id: "service", x: 180, y: 180, name: "Demo service", kind: "AFFECTED ENTITY"},
+    {id: "cache", x: 340, y: 180, name: "Cache", kind: "DEPENDENCY"},
+  ];
+  return <figure className="operational-graph"><svg viewBox="0 0 480 272" role="img" aria-labelledby="graph-title graph-desc">
+    <title id="graph-title">Sample operational dependency graph</title>
+    <desc id="graph-desc">Six declared entities. A pipeline consumes a dataset and depends on the affected service. A host runs the service; the service depends on PostgreSQL and a cache. Edges are relationships, not causal conclusions.</desc>
+    <defs><marker id="graph-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10" fill="var(--signal-soft)" /></marker></defs>
+    <g className="graph-edges" fill="none" markerEnd="url(#graph-arrow)">
+      <path d="M180 57H146" /><path d="M242 90V174" /><path d="M401 90V125H305V180" /><path d="M180 212H146" /><path d="M306 212H334" />
+    </g>
+    <g className="graph-edge-labels"><text x="162" y="45">consumes</text><text x="234" y="128" textAnchor="end">depends_on</text><text x="356" y="117">hosts</text><text x="163" y="199">depends_on</text><text x="319" y="199">depends_on</text></g>
+    {nodes.map(node => <g key={node.id} className={node.id === "service" ? "graph-node affected" : "graph-node"} transform={`translate(${node.x} ${node.y})`}><rect width="124" height="64" rx="3" /><circle cx="15" cy="16" r="3" /><text className="graph-kind" x="62" y="20" textAnchor="middle">{node.kind}</text><text className="graph-name" x="62" y="44" textAnchor="middle">{node.name}</text></g>)}
+  </svg><figcaption><span><i />Declared relationship</span><span><i className="incident-node" />Incident scope</span><span>6 entities / 5 edges · illustrative</span></figcaption></figure>;
 }
 
 const principles = [
-  ["Deterministic first", "Known signatures and project-owned rules run before optional model reasoning."],
-  ["Evidence grounded", "Facts, evidence, hypotheses, contradictions, confidence, and gaps stay distinct."],
-  ["Model optional", "The core runs offline. Providers implement a narrow, explicitly enabled gateway."],
-  ["Local first", "SQLite and Markdown provide inspectable defaults without a hosted dependency."],
-  ["Vendor agnostic", "Core contracts remain independent of observability, cloud, orchestration, and agent vendors."],
-  ["Guarded by design", "Plans, approvals, verification, audit, and truth state remain explicit boundaries."],
+  ["Context before conclusions", "An incident-scoped operational graph connects relevant entities and dependencies without sending an entire estate to a model."],
+  ["Known patterns first", "Deterministic signatures produce match, no_match, or unknown. Only a sufficient signature ends triage."],
+  ["One bounded investigator", "When explicitly enabled, a tool-using agent explores uncertainty through approved evidence, graph, code, and isolated probes."],
+  ["Evidence decides", "Predictions and falsifiers are assessed mechanically. Missing or conflicting observations remain unresolved; contradictions matter."],
+  ["Every step inspectable", "Structured reports retain findings, evidence, tool receipts, unresolved questions, and usage—not raw chain-of-thought."],
+  ["Engineers keep authority", "The current SDK stops at human review. Suggestions are text; no patch, rollback, remediation, or rule promotion runs automatically."],
 ];
 
 export function Principles() {
-  return (
-    <section className="paper-section" id="principles">
-      <div className="shell section-grid">
-        <div className="section-intro" data-reveal="">
-          <p className="eyebrow">A SMALL CORE / EXPLICIT BOUNDARIES</p>
-          <h2>Framework primitives.<br />Your operating stack.</h2>
-          <p>Lumis SDK supplies reusable semantics and safety controls while teams keep their monitoring, storage, model, workflow, and deployment choices.</p>
-        </div>
-        <div className="principle-grid" data-reveal="stagger">
-          {principles.map(([title, copy], index) => (
-            <article className="principle" key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{copy}</p></article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="paper-section" id="principles"><div className="shell section-grid"><div className="section-intro"><p className="eyebrow">UNDERSTAND BEFORE YOU ACT</p><h2>Models propose.<br />Lumis tests.</h2><p>Build investigations that can be questioned, reproduced, and revised. An explanation earns evidence support—not automatic authority.</p><Link className="text-link" href="/docs/investigation">Explore the investigation model →</Link></div><div className="principle-grid">{principles.map(([title, copy], i) => <article className="principle" key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>;
 }
 
 export function Architecture() {
-  return (
-    <section className="architecture dark-zone" id="architecture">
-      <div className="shell">
-        <div className="section-heading split-heading" data-reveal="">
-          <div><p className="eyebrow">PORTS & ADAPTERS</p><h2>Compose recovery without vendor lock-in.</h2></div>
-          <p>A strict domain holds incident and recovery meaning. Application services coordinate it through replaceable ports; local reference adapters—and independent plugins—connect the infrastructure you choose.</p>
-        </div>
-        <div className="architecture-board" data-reveal="">
-          <div className="arch-column">
-            <span className="arch-label">PROJECT ENTRY POINTS</span>
-            <ArchNode name="Lumis SDK CLI" detail="init · doctor · diagnose · rules · plugins" />
-            <ArchNode name="Python application" detail="diagnosis · evidence · lifecycle" />
-            <ArchNode name="Strict configuration" detail="lumis.dev/v1 · checked schemas" />
-          </div>
-          <div className="arch-arrow" aria-hidden="true">→</div>
-          <div className="arch-column core">
-            <span className="arch-label">VENDOR-NEUTRAL CORE</span>
-            <ArchNode name="Application services" detail="diagnose · propose · verify · learn" active />
-            <ArchNode name="Domain contracts" detail="evidence · plans · approvals · truth" active />
-            <ArchNode name="Provider ports" detail="model · memory · policy · audit" />
-          </div>
-          <div className="arch-arrow" aria-hidden="true">←</div>
-          <div className="arch-column">
-            <span className="arch-label">REFERENCE ADAPTERS</span>
-            <ArchNode name="Deterministic rules" detail="legacy text + structured engine" />
-            <ArchNode name="Evidence & redaction" detail="bounded local JSON · conservative" />
-            <ArchNode name="Reports & memory" detail="Markdown · JSON · SQLite" />
-            <ArchNode name="Plugin catalog" detail="postgres memory · HTTP evidence" />
-          </div>
-        </div>
-        <div className="architecture-note" data-reveal=""><span className="blue-pixel" />Domain and application packages import no observability, orchestration, cloud, model-provider, or agent SDK. Independent plugins attach through ports—discovery never grants authority.</div>
-        <div className="research-architecture" data-reveal="">
-          <div className="research-architecture-copy">
-            <p className="eyebrow">THE PAPER / SEVEN LOGICAL LAYERS</p>
-            <h3>Verified repetition becomes policy.</h3>
-            <p>Telemetry and incident memory ground deterministic policy and bounded agentic reasoning. Approved actions pass through guarded execution; verification then closes two learning loops.</p>
-          </div>
-          <ol className="layer-list" aria-label="Seven-layer reference architecture">
-            <li><b>01</b><span>Pipeline estate</span></li><li><b>02</b><span>Telemetry + signals</span></li>
-            <li><b>03</b><span>Incident memory</span></li><li><b>04</b><span>Policy + reasoning</span></li>
-            <li><b>05</b><span>Approval + governance</span></li><li><b>06</b><span>Guarded execution</span></li>
-            <li><b>07</b><span>Verification + learning</span></li>
-          </ol>
-          <div className="promotion-flow" aria-label="Recurring pattern promotion loop">
-            <div><small>VERIFIED EPISODES</small><strong>same pattern × N</strong><span>Example policy: 5 confirmed recurrences</span></div>
-            <i aria-hidden="true">→</i>
-            <div><small>PROMOTION GATE</small><strong>review + replay tests</strong><span>Threshold is project-configurable</span></div>
-            <i aria-hidden="true">→</i>
-            <div className="promoted"><small>DETERMINISTIC POLICY</small><strong>versioned rule</strong><span>Known incidents take the cheaper path</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="architecture dark-zone" id="architecture"><div className="shell"><div className="section-heading split-heading"><div><p className="eyebrow">A PORTABLE INVESTIGATION KERNEL</p><h2>Your systems.<br />One evidence model.</h2></div><p>Connect externally through telemetry, topology, and typed observations. The SDK does not import your application, replace your monitoring stack, or require a graph server.</p></div><div className="architecture-board"><div className="arch-column"><span className="arch-label">OPERATOR-OWNED INPUTS</span><ArchNode name="Incidents & topology" detail="time windows · identities · relationships" /><ArchNode name="Read-only observations" detail="snapshots · metrics · logs · traces · workflows" /><ArchNode name="Approved source context" detail="explicit file allowlists · local Git" /></div><span className="arch-arrow" aria-hidden="true">→</span><div className="arch-column core"><span className="arch-label">LUMIS SDK</span><ArchNode name="Operational graph" detail="Pydantic + NetworkX MultiDiGraph" active /><ArchNode name="Checks & investigation" detail="deterministic triage · optional Pydantic AI" active /><ArchNode name="Mechanical assessment" detail="predictions · falsifiers · provenance" active /></div><span className="arch-arrow" aria-hidden="true">→</span><div className="arch-column"><span className="arch-label">INSPECTABLE OUTPUTS</span><ArchNode name="Incident report" detail="support · contradiction · uncertainty" /><ArchNode name="Tool receipts & budgets" detail="queries · requests · tokens · probes" /><ArchNode name="Local audit records" detail="SQLite · separate human resolutions" /></div></div><div className="architecture-note"><span className="blue-pixel" />Core contracts remain independent of the application and optional providers. Discovery and investigation have separate, explicit limits.</div><Link className="text-link" href="/docs/architecture">Read the architecture →</Link></div></section>;
 }
 
-function ArchNode({ name, detail, active = false }: { name: string; detail: string; active?: boolean }) {
-  return <div className={`arch-node ${active ? "active" : ""}`}><i /><div><strong>{name}</strong><span>{detail}</span></div><b>→</b></div>;
+function ArchNode({name, detail, active = false}: {name: string; detail: string; active?: boolean}) {
+  return <div className={`arch-node ${active ? "active" : ""}`}><i /><div><strong>{name}</strong><span>{detail}</span></div></div>;
 }
 
-const stages = [
-  ["Detect", "external / local input", "current"], ["Triage", "deterministic classification", "current"],
-  ["Diagnose", "rules + optional model", "current"], ["Plan", "playbook proposals", "current"],
-  ["Approve", "idempotent decisions", "current"], ["Remediate", "future RFC-gated work", "guard"],
-  ["Verify", "explicit truth records", "current"], ["Learn", "memory + rule candidates", "current"],
-];
-
-export function Lifecycle() {
-  return (
-    <section className="paper-section lifecycle-section" id="lifecycle">
-      <div className="shell">
-        <div className="section-heading split-heading reverse light" data-reveal="">
-          <p>Lumis SDK begins with reproducible diagnosis and ships typed contracts for planning, approval, verification, audit, and learning. Execution is intentionally absent from core.</p>
-          <div><p className="eyebrow">DIAGNOSIS TODAY / HEALING OVER TIME</p><h2>A lifecycle designed for guarded autonomy.</h2></div>
-        </div>
-        <div className="lifecycle-track" data-reveal="stagger">
-          {stages.map(([name, detail, state], index) => (
-            <div className={`stage ${state}`} key={name}><span>0{index + 1}</span><i /><strong>{name}</strong><small>{detail}</small></div>
-          ))}
-        </div>
-        <div className="guard-note" data-reveal=""><b>IMPLEMENTATION BOUNDARY</b><span>Blue stages ship today as code or typed contracts. Amber remediation remains future, RFC-governed work requiring allowlists, policy, approval, audit, limits, idempotency, and verification.</span></div>
-      </div>
-    </section>
-  );
+export function Workflow() {
+  const steps = [["Prepare", "Discover and bind a scoped estate."], ["Triage", "Test known signatures against observations."], ["Investigate", "Inspect and probe only when enabled."], ["Assess", "Validate explanations against evidence."], ["Review", "Give engineers findings and open questions."]];
+  return <section className="paper-section lifecycle-section" id="workflow"><div className="shell"><div className="section-heading split-heading reverse light"><p>A sufficient known signature can avoid a model call. Ambiguous cases reach one bounded investigator—or a human when no agent is enabled. Both paths end in the same reviewable report.</p><div><p className="eyebrow">DETERMINISTIC OUTSIDE / AGENTIC WHEN NEEDED</p><h2>A small loop.<br />Explicit boundaries.</h2></div></div><div className="lifecycle-track current-investigation">{steps.map(([title, detail], i) => <div className="stage current" key={title}><span>0{i+1}</span><i /><strong>{title}</strong><small>{detail}</small></div>)}</div><div className="guard-note"><b>SUPPORT ≠ CONFIRMATION</b><span>A supported explanation is not causal proof. Probe results are synthetic evidence, and a failed query is not a false measurement.</span></div><EvidenceChart /></div></section>;
 }
 
-export function Framework() {
-  return (
-    <section className="framework dark-zone" id="framework">
-      <div className="shell">
-        <div className="section-heading split-heading" data-reveal="">
-          <div><p className="eyebrow">THE OPEN FOUNDATION</p><h2>Small enough to understand. Open enough to extend.</h2></div>
-          <p>Lumis SDK is the reusable framework layer—not a monitoring system, orchestrator, hosted control plane, or mandatory agent runtime.</p>
-        </div>
+function EvidenceChart() {
+  return <figure className="evidence-chart"><div><p className="eyebrow">SYNTHETIC QUICKSTART / EVIDENCE STATES</p><h3>What is observed. What remains open.</h3><p>The offline scaffold establishes service unavailability. It does not establish why the service failed.</p></div><div className="evidence-state-chart" role="img" aria-label="Categorical evidence chart: service unavailability is supported; underlying root cause remains unresolved; causal confirmation is not established.">{[["Service unavailability", "SUPPORTED", "supported"], ["Underlying cause", "UNRESOLVED", "unknown"], ["Causal confirmation", "NOT ESTABLISHED", "unknown"]].map(([label, status, kind]) => <div className={`evidence-chart-row ${kind}`} key={label}><strong>{label}</strong><span><i /><i /><i /><i /></span><b>{status}</b></div>)}<small>Evidence categories—not confidence scores or performance metrics.</small></div></figure>;
+}
 
-        <div className="sdk-lumis" data-reveal="stagger">
-          <div className="sdk-lumis-intro"><p className="eyebrow">OPEN SOURCE / PLATFORM COMING SOON</p><h2>Lumis SDK stays useful on its own.</h2><p>Use the framework locally or self-host it today. The managed Lumis platform by Qadim Labs is still in development.</p></div>
-          <div className="compare-panel"><span>LUMIS SDK</span><ul><li>Open-source framework</li><li>Local and self-hosted</li><li>Community adapters</li><li>Your infrastructure and policies</li></ul><Link href="/docs/project/lumis-and-sdk">Understand the boundary →</Link></div>
-          <div className="compare-panel managed"><span>LUMIS · COMING SOON</span><ul><li>Hosted team workflows</li><li>Managed integrations and memory</li><li>Approvals, audit, and runners</li><li>Enterprise deployment and support</li></ul><span className="coming-soon-label" aria-label="Lumis platform coming soon">PLATFORM IN DEVELOPMENT</span></div>
-        </div>
-      </div>
-    </section>
-  );
+export function Start() {
+  return <section className="framework dark-zone" id="framework"><div className="shell"><div className="section-heading split-heading"><div><p className="eyebrow">THE OPEN FOUNDATION</p><h2>Small enough to understand. Open enough to extend.</h2></div><p>Lumis SDK is the reusable investigation kernel—not a monitoring system, orchestrator, hosted control plane, or automatic recovery executor.</p></div><div className="sdk-lumis"><div className="sdk-lumis-intro"><p className="eyebrow">OPEN SOURCE / PLATFORM COMING SOON</p><h2>Lumis SDK stays useful on its own.</h2><p>Start locally with a synthetic incident, then connect your own systems through approved read-only observations.</p></div><div className="compare-panel"><span>LUMIS SDK</span><ul><li>Vendor-neutral Python contracts</li><li>Scoped operational graphs</li><li>Deterministic checks, optional model</li><li>Inspectable human-review reports</li></ul><Link href="/docs/architecture">Explore the architecture →</Link></div><div className="compare-panel managed"><span>LUMIS PLATFORM · COMING SOON</span><ul><li>Broader operational intelligence</li><li>Managed team workflows</li><li>Reviewed learning and reasoning</li><li>Policy-controlled action research</li></ul><span className="coming-soon-label">PLATFORM IN DEVELOPMENT</span></div></div><div className="offline-start"><div><p className="eyebrow">OFFLINE FIRST RUN</p><h3>One incident. No cloud account.</h3><p>A nonterminal health finding and an unconfirmed human-review report. No model call. No automatic fix.</p><Link className="text-link" href="/docs/quickstart">Run the quickstart →</Link></div><div className="start-command"><div className="instrument-head"><span>LOCAL / SYNTHETIC</span><CopyCode code={QUICK_RUN} /></div><pre><code>{QUICK_RUN}</code></pre></div></div></div></section>;
+}
+const QUICK_RUN = `uv run lumis init --directory /tmp/lumis-demo\nuv run lumis doctor --project /tmp/lumis-demo/lumis.yaml\nuv run lumis incident \\\n  --project /tmp/lumis-demo/lumis.yaml \\\n  --incident /tmp/lumis-demo/incident.json \\\n  --observations /tmp/lumis-demo/observations.json`;
+
+export function Project() {
+  return <section className="paper-section project-section" id="project"><div className="shell section-grid"><div className="section-intro"><p className="eyebrow">RESEARCH SOFTWARE / INDEPENDENT FOUNDATION</p><h2>Open today.<br />More to understand.</h2><p>Lumis SDK is the experimental, Apache-2.0 foundation for evidence-grounded operational intelligence. Data, AI, and software systems are starting points—not the limit of the underlying contracts.</p><Link className="text-link" href="/docs/project">Project status and contribution →</Link></div><div className="project-boundaries"><article><span>CURRENT SDK</span><h3>Investigation, not automatic recovery.</h3><p>Typed contracts, scoped graphs, read-only connectors, deterministic checks, one optional investigator, isolated experiments, and local audit records.</p></article><article><span>LUMIS PLATFORM · COMING SOON</span><h3>A broader operational intelligence direction.</h3><p>Managed workflows, advanced reasoning, reviewed learning, and policy-controlled action are platform and research work—not shipped SDK capabilities.</p></article><article><span>FOUNDATIONAL RESEARCH / arXiv 2608.01955</span><h3>From guarded recovery to grounded investigation.</h3><p>The earlier self-healing architecture informs the research. The current SDK has a narrower, independently testable investigation boundary.</p><a className="text-link" href="https://arxiv.org/abs/2608.01955">Read the foundational preprint ↗</a></article></div></div></section>;
 }
 
 export function Research() {
@@ -206,9 +104,9 @@ export function Research() {
           <p className="eyebrow">FROM RESEARCH TO FRAMEWORK</p>
           <h2>Born in a paper.<br />Built in the open.</h2>
           <p>
-            Lumis SDK implements the agentic recovery and incident response reference
-            architecture proposed in research led by Solomon Eshun, the project&apos;s
-            maintainer—together with the open-source contributors who join in.
+            Lumis began with research into vendor-agnostic, guarded self-healing.
+            The current SDK focuses that foundation on evidence-grounded investigation:
+            understand the incident, test explanations, and keep engineers in control.
           </p>
         </div>
         <article className="paper-card" data-reveal="">
@@ -219,7 +117,7 @@ export function Research() {
             The paper proposes a seven-layer, vendor-agnostic architecture for guarded
             self-healing. Verified outcomes enrich incident memory, while recurring
             diagnosis-and-remediation patterns can be reviewed, tested, and promoted into
-            deterministic rules—making repeated incidents cheaper and more predictable.
+            deterministic rules—a research direction rather than automatic learning in the current SDK.
           </p>
           <div className="paper-actions">
             <a className="paper-cta" href="https://arxiv.org/abs/2608.01955" target="_blank" rel="noreferrer">READ ON arXiv ↗</a>
@@ -231,58 +129,6 @@ export function Research() {
   );
 }
 
-// Add new sessions here as they are recorded; the strip renders whatever is listed.
-const learnSessions = [
-  {
-    tag: "VIDEO · COMING SOON",
-    title: "Intro to Lumis SDK — your first deterministic diagnosis",
-    detail: "Walking the simple-log-diagnosis cookbook from install to a confirmed resolution.",
-    href: "/docs/learn/videos",
-  },
-];
-
-export function Learn() {
-  return (
-    <section className="learn-strip dark-zone" id="learn">
-      <div className="shell learn-inner">
-        <div className="learn-intro" data-reveal="">
-          <p className="eyebrow">LEARN / BUILD WITH LUMIS</p>
-          <h2>Sessions, tutorials, and posts.</h2>
-          <Link href="/docs/learn/videos">Browse all sessions →</Link>
-        </div>
-        <div className="learn-cards" data-reveal="stagger">
-          {learnSessions.map((session) => (
-            <Link className="learn-card" href={session.href} key={session.title}>
-              <span>{session.tag}</span>
-              <strong>{session.title}</strong>
-              <p>{session.detail}</p>
-            </Link>
-          ))}
-          <Link className="learn-card ghost" href="/docs/cookbooks/overview">
-            <span>13 RUNNABLE COOKBOOKS</span>
-            <strong>Prefer reading? Every cookbook is a self-contained walkthrough.</strong>
-            <p>Synthetic, offline, and reproducible—from first diagnosis to guarded proposals.</p>
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function Footer() {
-  return (
-    <footer className="site-footer dark-zone">
-      <div className="shell footer-inner">
-        <Brand />
-        <p>Open-source agentic self-healing for data and AI pipelines.</p>
-        <div>
-          <Link href="/docs">Docs</Link>
-          <a href="https://github.com/soloshun/lumis-sdk">GitHub</a>
-          <a href="https://pypi.org/project/lumis-sdk/">PyPI</a>
-          <a href="/llms.txt">llms.txt</a>
-          <a href="https://github.com/soloshun/lumis-sdk/blob/main/LICENSE">Apache-2.0</a>
-        </div>
-      </div>
-    </footer>
-  );
+  return <footer className="site-footer dark-zone"><div className="shell footer-inner"><Brand /><p>Evidence-grounded operational intelligence.</p><div><Link href="/docs">Docs</Link><a href={REPO}>GitHub</a><a href="/llms.txt">llms.txt</a><a href={`${REPO}/blob/dev/LICENSE`}>Apache-2.0</a></div></div></footer>;
 }
