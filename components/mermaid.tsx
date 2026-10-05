@@ -4,51 +4,37 @@ import { useEffect, useRef, useState } from "react";
 
 let renderCount = 0;
 
-function themeVariables(dark: boolean) {
+function themeVariables(dark: boolean, fontFamily: string) {
   return dark
     ? {
         background: "transparent",
-        primaryColor: "#121620",
-        primaryTextColor: "#e8ebf1",
-        primaryBorderColor: "#2962ff",
-        secondaryColor: "#0d1017",
-        tertiaryColor: "#171b25",
-        lineColor: "#7aa2ff",
-        textColor: "#b2bac6",
-        noteBkgColor: "#171b25",
-        noteTextColor: "#b2bac6",
-        noteBorderColor: "#2962ff",
-        actorBkg: "#121620",
-        actorTextColor: "#e8ebf1",
-        actorBorder: "#2962ff",
-        signalColor: "#7aa2ff",
-        signalTextColor: "#b2bac6",
-        clusterBkg: "rgba(41,98,255,.05)",
-        clusterBorder: "rgba(122,162,255,.4)",
-        edgeLabelBackground: "#0d1017",
-        fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+        primaryColor: "#181d1e",
+        primaryTextColor: "#e8ebe9",
+        primaryBorderColor: "#3bbfad",
+        secondaryColor: "#131617",
+        tertiaryColor: "#1d2223",
+        lineColor: "#6fd5c7",
+        textColor: "#c3c9c6",
+        clusterBkg: "rgba(59,191,173,.06)",
+        clusterBorder: "rgba(111,213,199,.35)",
+        edgeLabelBackground: "#131617",
+        fontFamily,
+        fontSize: "14px",
       }
     : {
         background: "transparent",
-        primaryColor: "#eef2ff",
-        primaryTextColor: "#0b0d12",
-        primaryBorderColor: "#2962ff",
-        secondaryColor: "#f3f4f7",
-        tertiaryColor: "#e9ecf2",
-        lineColor: "#2962ff",
-        textColor: "#4f5968",
-        noteBkgColor: "#f3f4f7",
-        noteTextColor: "#4f5968",
-        noteBorderColor: "#2962ff",
-        actorBkg: "#ffffff",
-        actorTextColor: "#0b0d12",
-        actorBorder: "#2962ff",
-        signalColor: "#2962ff",
-        signalTextColor: "#4f5968",
-        clusterBkg: "rgba(41,98,255,.045)",
-        clusterBorder: "rgba(41,98,255,.35)",
-        edgeLabelBackground: "#f8f9fb",
-        fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+        primaryColor: "#eef7f5",
+        primaryTextColor: "#15181b",
+        primaryBorderColor: "#0d7a6f",
+        secondaryColor: "#f0f1ec",
+        tertiaryColor: "#f7f7f4",
+        lineColor: "#0d7a6f",
+        textColor: "#3c4248",
+        clusterBkg: "rgba(13,122,111,.04)",
+        clusterBorder: "rgba(13,122,111,.3)",
+        edgeLabelBackground: "#ffffff",
+        fontFamily,
+        fontSize: "14px",
       };
 }
 
@@ -61,13 +47,17 @@ export function Mermaid({ code, caption }: { code: string; caption?: string }) {
 
     async function draw() {
       try {
+        // Measure labels with the page font, or Mermaid sizes nodes for the fallback font and clips text.
+        await document.fonts.ready;
         const mermaid = (await import("mermaid")).default;
         const dark = document.documentElement.dataset.docTheme === "dark";
+        // Mermaid measures labels with this font, so it must be a real family list, not a CSS variable.
+        const fontFamily = getComputedStyle(document.body).fontFamily;
         mermaid.initialize({
           startOnLoad: false,
           securityLevel: "strict",
           theme: "base",
-          themeVariables: themeVariables(dark),
+          themeVariables: themeVariables(dark, fontFamily),
           flowchart: { curve: "basis", htmlLabels: true },
           sequence: { mirrorActors: false },
         });

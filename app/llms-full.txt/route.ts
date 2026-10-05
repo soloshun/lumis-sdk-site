@@ -6,7 +6,7 @@ export function GET() {
   const body = [
     `# Lumis SDK ${SDK_VERSION} — complete documentation`,
     "",
-    "Experimental, Apache-2.0 Python SDK for evidence-grounded operational intelligence. Scoped graph → registered evidence → deterministic triage → optional bounded investigator → mechanical assessment → human review. Install a reviewed dev checkout; the new architecture is not established as a published index release. No remediation executor or automatic learning. Supported is not causally confirmed. Repository: https://github.com/soloshun/lumis-sdk/tree/dev. Foundational prior research: https://arxiv.org/abs/2608.01955.",
+    `Experimental, Apache-2.0 Python SDK for evidence-grounded incident investigation. Scoped graph → registered evidence → deterministic triage → optional bounded investigator → mechanical assessment → human review. Install: pip install "lumis-sdk[http,agent]" (${SDK_VERSION}). Read-only: no remediation executor or automatic learning. Supported is not causally confirmed. Repository: https://github.com/soloshun/lumis-sdk. Foundational research: https://arxiv.org/abs/2608.01955.`,
     "",
     ...docs.map((page) => toMarkdown(page)),
   ].join("\n\n---\n\n");

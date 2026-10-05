@@ -11,12 +11,14 @@ const nextConfig: NextConfig = {
       "python-api/memory", "python-api/policy-verification-learning", "python-api/plugins",
       "cookbooks/overview", "learn/videos", "project/roadmap", "project/contributing", "project/stability", "project/research", "project/lumis-and-sdk",
     ];
+    // Old slugs → current pages. Point directly at the final page so no redirect chains.
     const current: Record<string, string> = {
-      "overview": "", "getting-started/quickstart": "quickstart", "getting-started/framework-workflow": "investigation",
-      "concepts/deterministic-first": "investigation", "concepts/evidence-grounded": "investigation",
-      "architecture/overview": "architecture", "architecture/model-boundary": "safety", "configuration/project": "configuration",
-      "python-api/overview": "api", "python-api/evidence-and-reports": "api", "python-api/connectors": "connectors",
-      "reference/cli": "api", "reference/domain-models": "architecture", "reference/ports": "api", "safety/threat-model": "safety",
+      "overview": "", "getting-started/quickstart": "quickstart", "getting-started/framework-workflow": "how-it-works",
+      "concepts/deterministic-first": "triage", "concepts/evidence-grounded": "evidence",
+      "architecture/overview": "how-it-works", "architecture/model-boundary": "safety", "configuration/project": "configuration",
+      "python-api/overview": "api", "python-api/evidence-and-reports": "reports", "python-api/connectors": "connectors",
+      "reference/cli": "api", "reference/domain-models": "how-it-works", "reference/ports": "api", "safety/threat-model": "safety",
+      "architecture": "how-it-works", "investigation": "investigator",
     };
     return [
       ...migration.map(slug => ({source: `/docs/${slug}`, destination: "/docs/project", permanent: true})),

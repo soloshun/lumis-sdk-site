@@ -83,14 +83,14 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
       <JsonLd data={docSchema} />
       <DocsNav />
       <aside className="docs-sidebar" aria-label="Documentation navigation">
-        <div className="docs-version"><span>SDK</span><b>{SDK_VERSION}</b><small>PoC</small></div>
+        <div className="docs-version"><span>lumis-sdk</span><b>{SDK_VERSION}</b><small>Experimental</small></div>
         <DocsGroups
           groups={groups.map(({ group, pages }) => ({ group, pages: pages.map((item) => ({ slug: item.slug, label: item.label, nested: item.nested })) }))}
           activeSlug={page.slug}
           activeGroup={page.group}
         />
         <div className="docs-ai-note">
-          <span>FOR AI ASSISTANTS</span>
+          <span>For AI assistants</span>
           <a href="/llms.txt">llms.txt</a> · <a href="/llms-full.txt">llms-full.txt</a>
         </div>
       </aside>
@@ -98,33 +98,40 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         <MobileDocSelect current={page.slug} options={groups.flatMap(({pages}) => pages.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` })))} />
         <article className="docs-article">
           <header>
-            <p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p>
+            <p className="docs-breadcrumb">{page.group}</p>
             <h1>{page.title}</h1>
             <p>{page.description}</p>
             <div className="docs-page-meta">
-              <span>DEVELOPMENT · PRE-1.0</span><span>PYTHON 3.11+</span><span>UPDATED {CONTENT_UPDATED}</span>
+              <span>v{SDK_VERSION} · experimental</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
               <CopyMarkdown markdown={toMarkdown(page)} />
-              <a href="https://github.com/soloshun/lumis-sdk-site/blob/dev/content/docs.ts" target="_blank" rel="noreferrer">PAGE SOURCE ↗</a>
             </div>
           </header>
           {page.sections.map((section) => (
             <section id={section.id} key={section.id}><h2>{section.title}</h2>{section.blocks.map((block, index) => <DocBlockView block={block} key={index} />)}</section>
           ))}
           <nav className="docs-pagination" aria-label="Previous and next pages">
-            {adjacent.previous ? <Link href={adjacent.previous.slug === "overview" ? "/docs" : `/docs/${adjacent.previous.slug}`}><small>PREVIOUS</small><span>← {adjacent.previous.label}</span></Link> : <span />}
-            {adjacent.next ? <Link className="next" href={`/docs/${adjacent.next.slug}`}><small>NEXT</small><span>{adjacent.next.label} →</span></Link> : <span />}
+            {adjacent.previous ? <Link href={adjacent.previous.slug === "overview" ? "/docs" : `/docs/${adjacent.previous.slug}`}><small>Previous</small><span>← {adjacent.previous.label}</span></Link> : <span />}
+            {adjacent.next ? <Link className="next" href={`/docs/${adjacent.next.slug}`}><small>Next</small><span>{adjacent.next.label} →</span></Link> : <span />}
           </nav>
         </article>
       </main>
-      <aside className="docs-toc" aria-label="On this page"><h2>ON THIS PAGE</h2>{page.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</aside>
+      <aside className="docs-toc" aria-label="On this page"><h2>On this page</h2>{page.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</aside>
     </div>
   );
 }
 
 const LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
 
-// Renders plain text with [label](url) markdown links; everything else stays literal text.
+// Renders plain text with `code` spans and [label](url) markdown links; everything else stays literal.
 function Inline({ text }: { text: string }) {
+  const segments = text.split("`");
+  if (segments.length === 1) return <Links text={text} />;
+  return <>{segments.map((segment, index) => (index % 2 ? <code key={index}>{segment}</code> : <Links text={segment} key={index} />))}</>;
+}
+
+function Links({ text }: { text: string }) {
+  const bold = text.split("**");
+  if (bold.length > 1) return <>{bold.map((segment, index) => (index % 2 ? <strong key={index}><Links text={segment} /></strong> : <Links text={segment} key={index} />))}</>;
   const parts: React.ReactNode[] = [];
   let cursor = 0;
   for (const match of text.matchAll(LINK_PATTERN)) {
@@ -136,7 +143,7 @@ function Inline({ text }: { text: string }) {
     else parts.push(<a href={href} target="_blank" rel="noreferrer" key={index}>{label} ↗</a>);
     cursor = index + match[0].length;
   }
-  if (parts.length === 0) return text;
+  if (parts.length === 0) return <>{text}</>;
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }

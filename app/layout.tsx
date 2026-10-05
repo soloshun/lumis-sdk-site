@@ -12,8 +12,9 @@ export const metadata: Metadata = {
   title: { default: SITE_TITLE, template: "%s | Lumis SDK" },
   description: SITE_DESCRIPTION,
   keywords: [
-    "operational intelligence SDK",
+    "incident investigation SDK",
     "evidence-grounded incident investigation",
+    "root cause analysis Python",
     "falsifiable hypotheses",
     "deterministic triage",
     "bounded investigator agent",
@@ -68,8 +69,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: "dark light",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#050507" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0e0f" },
   ],
 };
 

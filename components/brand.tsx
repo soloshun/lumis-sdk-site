@@ -16,7 +16,3 @@ export function Brand({ docs = false }: { docs?: boolean }) {
     </Link>
   );
 }
-
-export function GitHubMark() {
-  return <span className="github-mark" aria-hidden="true">GH</span>;
-}

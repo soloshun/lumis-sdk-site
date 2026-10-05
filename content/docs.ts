@@ -8,278 +8,781 @@ export type DocBlock =
 export type DocSection = { id: string; title: string; blocks: DocBlock[] };
 export type DocPage = { slug: string; group: string; label: string; title: string; description: string; nested?: boolean; sections: DocSection[] };
 
-export const SDK_VERSION = "dev · pre-1.0";
+export const SDK_VERSION = "0.1.0";
 export const GITHUB_REPO = "https://github.com/soloshun/lumis-sdk";
-export const SOURCE_DOCS = `${GITHUB_REPO}/blob/dev/docs`;
+export const SOURCE_DOCS = `${GITHUB_REPO}/blob/main/docs`;
+export const COOKBOOKS = "https://github.com/soloshun/lumis-cookbooks/tree/main/gridcast";
+export const RESEARCH_NOTES = "https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md";
 export const PAPER_URL = "https://arxiv.org/abs/2608.01955";
 export const PAPER_PDF = "/research/agentic-self-healing-for-data-and-ai-pipelines.pdf";
+export const CONTACT_EMAIL = "solomon@qadimlabs.com";
 
 const p = (text: string): DocBlock => ({type: "p", text});
 const code = (language: string, value: string): DocBlock => ({type: "code", language, code: value});
 const list = (...items: string[]): DocBlock => ({type: "list", items});
 const note = (title: string, text: string, tone: "blue" | "amber" | "green" = "blue"): DocBlock => ({type: "note", title, text, tone});
 const table = (headers: string[], rows: string[][]): DocBlock => ({type: "table", headers, rows});
-const source = (filename: string) => p(`[Full SDK source reference](${SOURCE_DOCS}/${filename}) — this website summarizes the development interface. Pin a reviewed SDK commit for reproducible work.`);
+const diagram = (value: string, caption?: string): DocBlock => ({type: "diagram", code: value, caption});
+const source = (filename: string, label = "SDK reference") => p(`Source: [${label}](${SOURCE_DOCS}/${filename}) in the SDK repository.`);
+
+const SMALL_PROJECT_YAML = `api_version: lumis.dev/operational-v1alpha1
+project:
+  name: my-api
+  environment: local
+
+sources:
+  prometheus:
+    enabled: true
+    endpoint: http://localhost:9090
+
+policies:
+  default_action_mode: read_only
+
+graph:
+  entities:
+    - id: service:api
+      kind: service
+      name: API
+  relationships: []
+
+queries:
+  - id: api-up
+    provider: prometheus
+    entity_id: service:api
+    key: up
+    description: Was the API scrape target up at the end of the incident?
+    parameters:
+      promql: 'min(up{job="api"})'
+  - id: api-probe
+    provider: prometheus
+    entity_id: service:api
+    key: probe_success
+    description: Did the external HTTP health probe succeed?
+    parameters:
+      promql: 'min(probe_success{job="blackbox-api"})'
+
+checks:
+  - id: api-down
+    terminal: true
+    explains_entities: [service:api]
+    hypothesis:
+      id: api-unavailable
+      statement: The API is down; both its scrape target and an external HTTP probe fail.
+      causal_path: [service:api]
+      evidence_needed: [api-up, api-probe]
+      predictions:
+        - {entity_id: "service:api", key: up, operator: eq, value: 0}
+        - {entity_id: "service:api", key: probe_success, operator: eq, value: 0}
+      falsifiers:
+        - {entity_id: "service:api", key: up, operator: eq, value: 1}
+        - {entity_id: "service:api", key: probe_success, operator: eq, value: 1}`;
+
+const FLOW_DIAGRAM = `flowchart TD
+    CFG["lumis.yaml<br/>sources · graph · registered queries<br/>checks · allowlist · budgets"]
+    INC["Incident<br/>affected entities + time window"]
+    SRC[("Your telemetry, read-only")]
+    PREP["1 · Prepare<br/>discover the operational graph,<br/>scope it to the incident"]
+    TRI["2 · Deterministic triage<br/>checks tested against facts<br/>from registered queries"]
+    AG["3 · Investigator (optional)<br/>proposes falsifiable hypotheses,<br/>asks for evidence by query ID"]
+    AS["4 · Mechanical assessment<br/>predictions and falsifiers<br/>vs. facts Lumis collected"]
+    REP["Report<br/>supported_diagnosis · insufficient_evidence ·<br/>requires_human_expert"]
+    HUM(("A person reviews<br/>and decides"))
+    CFG --> PREP
+    INC --> PREP
+    SRC -.->|read-only| PREP
+    SRC -.->|read-only| TRI
+    SRC -.->|read-only| AG
+    PREP --> TRI
+    TRI -->|"terminal check sufficient"| REP
+    TRI -->|"not sufficient, agent enabled"| AG
+    TRI -->|"agent not enabled"| REP
+    AG --> AS --> REP
+    REP --> HUM`;
 
 export const docs: DocPage[] = [
+  // ------------------------------------------------------------------ Start here
   {
-    slug: "overview", group: "Start here", label: "Overview", title: "Lumis SDK documentation",
-    description: "Build evidence-grounded operational investigations with a vendor-neutral Python SDK: scoped context, falsifiable explanations, bounded tools, and human review.",
+    slug: "overview", group: "Start here", label: "Introduction", title: "Introduction to Lumis SDK",
+    description: "An experimental, open-source Python SDK that investigates operational incidents: deterministic checks first, an optional bounded model, every explanation tested against evidence, and a report for a person to review.",
     sections: [
-      {id: "purpose", title: "Understand the system before acting", blocks: [
-        p("Lumis SDK turns an operational incident into a bounded investigation. It combines a prepared graph, registered observations, deterministic diagnostic signatures, and—when explicitly enabled—one tool-using investigator. Explanations are tested against evidence, not accepted because a model sounds confident."),
-        note("Experimental development architecture", "The operational-intelligence reset is on the SDK dev branch. Source metadata currently says 0.1.0rc1, but this does not establish that the new architecture is published on a package index. Install a reviewed development checkout; interfaces may change.", "amber"),
-        p("The public SDK stops at a structured human-review report. It does not repair production, apply generated patches, automatically ingest incidents, or promote learned rules. Supported means evidence support—not confirmed causality."),
+      {id: "what", title: "What Lumis does", blocks: [
+        p("When something breaks in a complex system, the alert tells you where it hurts, rarely what broke. Lumis helps answer the second question. Given an incident (which services are affected and when), it gathers evidence from your existing telemetry, tests explanations against that evidence, and returns a structured report: what is supported, what is contradicted, and what is still unknown."),
+        p("It works in a fixed order. Known failure patterns you describe are checked first, with no model involved. Only if they are not enough, and only if you enable it, a tool-using model investigates within strict limits. Whatever the model proposes is then checked mechanically against facts Lumis collected itself. Lumis never acts on your systems; a person reads the report and decides."),
+        diagram(FLOW_DIAGRAM, "The incident flow. Every path ends in the same report for human review."),
       ]},
-      {id: "reading-order", title: "A short reading path", blocks: [
-        list("[Quickstart](/docs/quickstart): install the development checkout and run the offline scaffold.", "[Architecture and graph](/docs/architecture): understand contracts, identity, topology, and bounded preparation.", "[Incident investigation](/docs/investigation): review triage, investigator tools, evidence semantics, and reports.", "[Configuration](/docs/configuration) and [connectors](/docs/connectors): declare the estate and approve observations.", "[Python API and CLI](/docs/api): compose investigations, exports, and local audit storage.", "[Safety and evaluation](/docs/safety): qualify optional models, code inspection, and sandbox experiments.", "[Project and migration](/docs/project): contribute, understand the reset, and separate SDK capability from platform plans."),
+      {id: "status", title: "Where the project is", blocks: [
+        note("Experimental, version 0.1.0", "Lumis is research software. The APIs and YAML format may change before 1.0. It has been evaluated on one reference estate with one model family; treat results elsewhere as unknown until you measure them.", "amber"),
+        table(["", "Status"], [
+          ["Release", "`lumis-sdk` 0.1.0 on PyPI (5 October 2026)"],
+          ["Python", "3.11, 3.12 and 3.13"],
+          ["License", "Apache-2.0"],
+          ["Evaluation", "The [GridCast reference estate](/docs/evaluation): 15 injected failures, one model (DeepSeek v4 pro)"],
+          ["Actions on your systems", "None. Lumis reads and reports."],
+        ]),
+      ]},
+      {id: "not", title: "What it is not", blocks: [
+        list(
+          "Not a monitoring or alerting system. It reads the telemetry you already have.",
+          "Not an automatic fixer. There is no remediation executor; suggestions are text for a person.",
+          "Not a source of confirmed root causes. A supported explanation is supported by evidence, not proven.",
+          "Not a hosted product. It is a library and a CLI you run yourself.",
+        ),
+      ]},
+      {id: "reading", title: "Where to go next", blocks: [
+        list(
+          "[Quickstart](/docs/quickstart): install and run an offline investigation in a minute.",
+          "[Your first real project](/docs/small-project): one service, Prometheus and one check.",
+          "[How Lumis works](/docs/how-it-works): the full flow and the vocabulary, in plain language.",
+          "[Evaluation](/docs/evaluation): what we measured on GridCast, including what went wrong.",
+        ),
+        p("For AI assistants: [llms.txt](/llms.txt) is a compact index of these pages and [llms-full.txt](/llms-full.txt) contains all of them as one Markdown file."),
+      ]},
+    ],
+  },
+  {
+    slug: "quickstart", group: "Start here", label: "Quickstart", title: "Quickstart",
+    description: "Install Lumis SDK from PyPI and run a complete, offline incident investigation with no cluster, API key or model call.",
+    sections: [
+      {id: "install", title: "1. Install", blocks: [
+        p("You need Python 3.11 or newer. The core package has no network dependencies; extras add them when you need them."),
+        code("bash", 'pip install lumis-sdk                  # core: offline investigation\npip install "lumis-sdk[http]"          # + Prometheus, Loki, Tempo, Prefect connectors\npip install "lumis-sdk[http,agent]"    # + the optional model investigator\npip install "lumis-sdk[sql]"           # + read-only PostgreSQL evidence'),
+        p("With uv, use `uv add \"lumis-sdk[http,agent]\"` in a project, or `uvx --from lumis-sdk lumis --help` to try the CLI without installing. Check the install with `lumis --version`."),
+        note("Use 0.1.0 or later", "The older `0.1.0rc1` upload on PyPI belongs to a previous architecture and does not match this documentation.", "amber"),
+      ]},
+      {id: "scaffold", title: "2. Create a starter project", blocks: [
+        code("bash", "lumis init --directory ./my-lumis\nlumis doctor --project ./my-lumis/lumis.yaml"),
+        p("`init` writes three files and refuses to overwrite existing ones: `lumis.yaml` (the project: one service, one registered query and one check), `incident.json` (an example incident with a time window) and `observations.json` (recorded facts to replay offline). `doctor` validates the project locally; it makes no network calls."),
+      ]},
+      {id: "run", title: "3. Investigate the incident", blocks: [
+        code("bash", "lumis incident \\\n  --project ./my-lumis/lumis.yaml \\\n  --incident ./my-lumis/incident.json \\\n  --observations ./my-lumis/observations.json"),
+        p("The command prints a JSON report. In the scaffold, the recorded observation says the service was unhealthy, so the check matches. The check is deliberately not terminal (one symptom is a lead, not a full explanation), and no investigator is enabled, so the incident goes to a person."),
+        table(["Report field", "Value", "Meaning"], [
+          ["`findings[0].status`", "`match`", "The recorded fact agrees with the check's prediction."],
+          ["`route`", "`human`", "No sufficient check and no investigator enabled."],
+          ["`conclusion`", "`requires_human_expert`", "More investigation is needed; nothing was concluded."],
+          ["`truth_state`", "`unconfirmed_hypothesis`", "Lumis never marks anything as confirmed."],
+          ["`requires_human_review`", "`true`", "Always true, on every path."],
+        ]),
+        p("Run it again without `--observations`: the finding becomes `unknown`. Missing data is never treated as a measurement."),
+      ]},
+      {id: "keep", title: "4. Keep and inspect the results", blocks: [
+        code("bash", "lumis incident --project ./my-lumis/lumis.yaml --incident ./my-lumis/incident.json \\\n  --observations ./my-lumis/observations.json --store ./my-lumis/incidents.sqlite\nlumis graph --project ./my-lumis/lumis.yaml --format svg --output ./my-lumis/graph.svg\nlumis console --project ./my-lumis/lumis.yaml"),
+        p("`--store` saves the report in a local SQLite audit file; reusing an incident ID is refused so history is never overwritten. `graph` exports the operational graph (`json`, `dot`, `svg` or `terminal`). `console` is a small interactive menu over the same commands."),
+      ]},
+      {id: "next", title: "5. Next", blocks: [
+        p("Connect Lumis to a real service in [your first real project](/docs/small-project), or read [how Lumis works](/docs/how-it-works) first."),
+        source("cli.md", "CLI walkthrough"),
+      ]},
+    ],
+  },
+  {
+    slug: "small-project", group: "Start here", label: "Your first real project", title: "Your first real project",
+    description: "Connect Lumis to one service and a Prometheus server, write a deterministic check with two independent signals, and add the optional investigator.",
+    sections: [
+      {id: "goal", title: "What you will build", blocks: [
+        p("One service (`service:api`), one Prometheus server and one check that answers a single question: is the API down? The example is the SDK's own [small-project example](https://github.com/soloshun/lumis-sdk/tree/main/docs/examples/small-project), which is exercised by its test suite."),
+        code("bash", 'pip install "lumis-sdk[http]"'),
+      ]},
+      {id: "project", title: "The project file", blocks: [
+        code("yaml", SMALL_PROJECT_YAML),
+        table(["Section", "What it says"], [
+          ["`sources.prometheus`", "Where to read metrics. Lumis runs read-only instant queries."],
+          ["`graph.entities`", "The one service this project knows about."],
+          ["`queries`", "Two operator-owned PromQL queries. Each produces one named fact about the service: `up` and `probe_success`."],
+          ["`checks`", "One signature: “the API is down” predicts both facts are 0, and is falsified if either is 1."],
+        ]),
+        p("The model never writes PromQL. If you later enable the investigator, it can only ask for these queries by ID."),
+      ]},
+      {id: "run", title: "Run it", blocks: [
+        code("json", '{\n  "id": "api-001",\n  "affected_entities": ["service:api"],\n  "symptoms": ["Health check failing"],\n  "started_at": "2026-10-05T05:00:00Z",\n  "ended_at": "2026-10-05T05:10:00Z"\n}'),
+        code("bash", "lumis doctor --project lumis.yaml\nlumis incident --project lumis.yaml --incident incident.json"),
+        p("Queries are evaluated at the end of the incident window. The check produces one of three findings:"),
+        table(["Finding", "When", "What happens"], [
+          ["`match`", "Both facts are 0", "The check is terminal, so triage concludes `supported_diagnosis` with no model call."],
+          ["`no_match`", "A falsifier holds: the API is up", "The incident goes to a person, or to the investigator if enabled."],
+          ["`unknown`", "A query returned no data", "The same. Missing data is never read as “down”."],
+        ]),
+      ]},
+      {id: "why", title: "Why the check looks like this", blocks: [
+        p("Lumis will not end triage on weak evidence, and the YAML enforces it. A terminal check must name the entities it explains (`explains_entities`) and predict at least two distinct facts from independent queries. With only one signal, set `terminal: false`: the check becomes a lead instead of a conclusion."),
+        p("Both signals here report a real 0 when the API is down: Prometheus writes `up = 0` for a failed scrape, and a blackbox HTTP probe writes `probe_success = 0`. A request rate would not work. When the process is down it stops producing samples, the query returns nothing, and Lumis records `unknown`."),
+        note("Avoid false zeros", "Do not add `or vector(0)` to queries. It turns “no data” into a measured zero. In our GridCast evaluation, false zeros from brand-new metric series caused every wrong conclusion in the first run.", "amber"),
+        p("Replayed facts (`--observations`) apply only to `provider: snapshot` queries, as in the `lumis init` scaffold. They do not override live Prometheus queries."),
+      ]},
+      {id: "agent", title: "Add the investigator", blocks: [
+        p("When no check matches, a model can look further, still read-only and bounded. Add a model and budget to the project:"),
+        code("yaml", "models:\n  provider: openrouter            # or openai, anthropic, gemini\n  model: deepseek/deepseek-v4-pro\n  api_key_env: OPENROUTER_API_KEY\n  reasoning: high\ninvestigator:\n  budget:\n    request_limit: 12"),
+        code("bash", 'pip install "lumis-sdk[http,agent]"\nexport OPENROUTER_API_KEY=...\nlumis incident --project lumis.yaml --incident incident.json --use-agent'),
+        p("Configuration alone never makes a paid call; only `--use-agent` does. See [the investigator](/docs/investigator) for what it can and cannot do, and [model providers](/docs/models) for choosing a model."),
+      ]},
+      {id: "grow", title: "Grow it", blocks: [
+        list(
+          "More signals: logs from Loki, traces from Tempo, workflow runs from Prefect, read-only SQL, and recent Git commits and Kubernetes rollouts. See [connectors](/docs/connectors).",
+          "More services: add entities and relationships, or let Kubernetes and the Prometheus service graph discover them. See [the operational graph](/docs/graph).",
+          "Code context: allowlist the files and Git history the investigator may read. See [the investigator](/docs/investigator).",
+        ),
+        p(`For a large worked example with seven sources, 40 queries and ten checks, see the [GridCast cookbook](${COOKBOOKS}). Smaller cookbooks are planned.`),
+        source("small-project.md", "Small-project guide"),
+      ]},
+    ],
+  },
+
+  // ------------------------------------------------------------------ Concepts
+  {
+    slug: "how-it-works", group: "Concepts", label: "How Lumis works", title: "How Lumis works",
+    description: "The end-to-end incident flow, who decides what, and the vocabulary used across the SDK, explained in plain language.",
+    sections: [
+      {id: "flow", title: "The flow, end to end", blocks: [
+        diagram(FLOW_DIAGRAM),
+        list(
+          "**Prepare.** Lumis builds an operational graph from what you declare and what it can discover (Kubernetes, Prometheus service graphs, Tempo, Prefect), then keeps only the part around the affected services.",
+          "**Triage.** Your checks are tested against facts from your registered queries. Each check either matches, does not match, or is unknown. A sufficient terminal check ends here, without a model.",
+          "**Investigate (optional).** If triage is not sufficient and you enabled it, one tool-using model explores: it reads the graph, asks for evidence by query ID, reads recent changes and allowlisted code, and proposes explanations.",
+          "**Assess.** Every explanation, from a check or from the model, states what it predicts and what would prove it wrong. Lumis checks those statements against the facts it collected itself.",
+          "**Report.** The result is one structured report for a person. Nothing is executed.",
+        ),
+      ]},
+      {id: "who", title: "Who decides what", blocks: [
+        table(["Role", "Decides"], [
+          ["You, the operator", "Which sources Lumis may read, which queries exist, which checks to run, which files the investigator may see, and every budget."],
+          ["The model (optional)", "Which registered queries to ask for, and which explanations to propose. Nothing else."],
+          ["Lumis", "Whether each explanation is supported, contradicted or unresolved, and whether the evidence is enough to conclude."],
+          ["A person", "What actually happened, and what to do about it."],
+        ]),
+        p("The working rule is “the model proposes; Lumis tests”. A model cannot add evidence, mark something as confirmed, or take an action."),
+      ]},
+      {id: "terms", title: "Vocabulary", blocks: [
+        table(["Term", "Meaning"], [
+          ["Incident", "The affected entities and a time window. The input to every investigation."],
+          ["Entity", "Something in your estate with a stable ID, for example `service:shop:checkout` or `k8s:shop:deployment:checkout`."],
+          ["Operational graph", "Entities and their relationships. It scopes what Lumis looks at; it is not proof of cause."],
+          ["Registered query", "An operator-written query (PromQL, LogQL, SQL…) with an ID, an entity and a key. The only way facts are collected."],
+          ["Observation (fact)", "One value for one entity and key at one time, with its source. For example, `up = 0` for `service:api`."],
+          ["Check", "A known failure pattern written as a hypothesis. Tested deterministically during triage."],
+          ["Finding", "A check's result: `match`, `no_match` or `unknown`."],
+          ["Hypothesis", "A falsifiable explanation: a statement, a causal path through the graph, predictions and falsifiers."],
+          ["Prediction / falsifier", "Facts the explanation expects to see, and facts that would contradict it."],
+          ["Assessment", "Lumis' mechanical verdict on a hypothesis: `supported`, `contradicted` or `unresolved`."],
+          ["Receipt", "A redacted record of every tool call and query, kept in the report."],
+          ["Conclusion", "`supported_diagnosis`, `insufficient_evidence` or `requires_human_expert`."],
+        ]),
       ]},
       {id: "principles", title: "Design principles", blocks: [
-        table(["Principle", "Implementation"], [["Evidence first", "Operator-owned query catalog, typed observations, provenance, time-window validation."], ["Deterministic first", "Known signatures run before optional uncertain investigation."], ["Bounded investigation", "Graph, context, query, request, tool, probe, token, and time limits."], ["Model optional", "Local replay needs no API key. Explicit opt-in is required for paid model calls."], ["Inspectable outputs", "Findings, candidate assessments, redacted receipts, usage, stop reasons, and unresolved questions."], ["Human authority", "Reports remain unconfirmed; separate manual resolution records do not execute or certify changes."]]),
-        p("Applications remain external. Your telemetry stack owns collection, your workflow engine owns execution, and Lumis uses approved read-only observations. GridCast and other cookbooks are external testbeds, not required SDK imports."),
-      ]},
-      {id: "source-of-truth", title: "Use the current source contracts", blocks: [p(`[SDK README](${GITHUB_REPO}/blob/dev/README.md), [review guide](${SOURCE_DOCS}/review-guide.md), and [schemas](${GITHUB_REPO}/tree/dev/schemas) are the detailed source references. This site covers the current operational interface rather than the retired self-healing modules. Use [llms.txt](/llms.txt) for a compact documentation index or [llms-full.txt](/llms-full.txt) for the complete site text.`)]},
-    ],
-  },
-  {
-    slug: "quickstart", group: "Start here", label: "Quickstart", title: "Run your first offline investigation",
-    description: "Install Lumis SDK from dev, initialize a synthetic project, inspect its graph, and produce a human-review incident report without a model key or cluster.",
-    sections: [
-      {id: "install", title: "1. Install the development checkout", blocks: [
-        p("Use Python 3.11–3.13 and uv. Clone the operational development branch; record the exact commit if you are evaluating or integrating it. An earlier PyPI artifact may contain a different architecture."),
-        code("bash", `git clone --branch dev ${GITHUB_REPO}.git\ncd lumis-sdk\ngit rev-parse HEAD\nuv sync --all-groups\nuv run lumis --version\nuv run lumis --help`),
-        note("No external system required", "This first run uses synthetic local contracts. It needs no consuming application, Kubernetes cluster, HTTP connector, model credential, or Docker daemon."),
-      ]},
-      {id: "initialize", title: "2. Create and inspect a project", blocks: [
-        code("bash", "uv run lumis init --directory /tmp/lumis-demo\nuv run lumis doctor --project /tmp/lumis-demo/lumis.yaml\nuv run lumis discover --project /tmp/lumis-demo/lumis.yaml --report\nuv run lumis graph --project /tmp/lumis-demo/lumis.yaml --format terminal"),
-        p("Choose an unused directory. Init creates lumis.yaml, incident.json, and observations.json without overwriting existing files. The project file uses JSON syntax, a valid YAML subset. Doctor validates local configuration and reports readiness warnings; it does not query a backend or validate live permissions."),
-        p("The scaffold declares one service, a registered health query, a falsifiable candidate, and a nonterminal diagnostic check. Discovery is local for this project. With external sources enabled, a complete discovery report and valid canonical entity bindings are required before investigation."),
-      ]},
-      {id: "run", title: "3. Produce a human-review report", blocks: [
-        code("bash", "uv run lumis incident \\\n  --project /tmp/lumis-demo/lumis.yaml \\\n  --incident /tmp/lumis-demo/incident.json \\\n  --observations /tmp/lumis-demo/observations.json"),
-        table(["Expected field", "Meaning"], [["finding: match, terminal: false", "The synthetic health observation matches, but does not fully explain the incident."], ["route: human", "No optional agent is enabled; the report goes directly to an engineer."], ["conclusion: requires_human_expert", "More investigation is needed, not automatic recovery."], ["truth_state: unconfirmed_hypothesis", "An observation or candidate is not confirmed root cause."], ["requires_human_review: true", "Review is retained even on the deterministic path."]]),
-        p("Omit --observations to test missing evidence. Missing data remains unknown rather than becoming a false measurement. The lower-level investigate command is a separate candidate/evaluation baseline; it is not the tool-agent workflow."),
-      ]},
-      {id: "audit", title: "4. Inspect and retain the artifacts", blocks: [
-        code("bash", "uv run lumis incident \\\n  --project /tmp/lumis-demo/lumis.yaml \\\n  --incident /tmp/lumis-demo/incident.json \\\n  --observations /tmp/lumis-demo/observations.json \\\n  --store /tmp/lumis-demo/incidents.sqlite\nuv run lumis graph --project /tmp/lumis-demo/lumis.yaml \\\n  --format svg --output /tmp/lumis-demo/graph.svg\nuv run lumis console --project /tmp/lumis-demo/lumis.yaml"),
-        p("SQLite writes are explicit. Duplicate incident IDs are refused instead of overwriting audit history; use a new ID for another stored run. SVG export refuses overwrite. The console is a small interactive menu; paid-agent permission defaults to no."),
-      ]},
-      {id: "next", title: "5. Add capabilities deliberately", blocks: [
-        p("Install the http extra for endpoint-backed telemetry; the agent extra for the optional tool-using investigator. Configure a provider and tool-capable model explicitly, then use --use-agent only after reviewing access, privacy, and costs. Probes remain disabled until a dedicated container environment is approved."),
-        code("bash", "uv sync --extra http --extra agent --all-groups\n# After configuring approved sources and explicit model settings:\nuv run lumis incident --project lumis.yaml --incident incident.json --use-agent"),
-        p(`[Offline agent walkthrough](${GITHUB_REPO}/blob/dev/docs/notebooks/incident-agent.ipynb) and [graph notebook](${GITHUB_REPO}/blob/dev/docs/notebooks/operational-graph.ipynb) demonstrate the contracts with synthetic, deterministic inputs. The agent notebook uses a scripted model—not a measured live-model diagnosis.`), source("cli.md"),
+        list(
+          "**Deterministic first.** Known failures are handled by checks. A model is used only for what checks cannot explain.",
+          "**Evidence first.** Facts come only from operator-registered queries, with provenance and time-window checks.",
+          "**Uncertainty stays visible.** Missing, conflicting or degraded facts leave an explanation unresolved; they never become support.",
+          "**One cause or no conclusion.** If supported explanations disagree on the root cause, the report says so instead of picking one.",
+          "**Bounded.** Graph size, queries, model requests, tool calls, tokens and time all have limits.",
+          "**Read-only.** There is no executor. A person keeps every decision.",
+        ),
+        source("architecture.md", "Architecture"),
       ]},
     ],
   },
   {
-    slug: "architecture", group: "Understand", label: "Architecture & graph", title: "An independent operational investigation kernel",
-    description: "Learn the Lumis SDK package structure, Pydantic contracts, NetworkX operational graph, identity conventions, discovery boundaries, and incident-scoped context.",
+    slug: "graph", group: "Concepts", label: "Operational graph", title: "The operational graph",
+    description: "How Lumis models your estate as entities and relationships, how identities work, how the graph is discovered and how it is scoped to each incident.",
     sections: [
-      {id: "flow", title: "The current investigation flow", blocks: [
-        {type: "diagram", code: `flowchart TD\n I[Explicit incident and time window] --> P[Prepare topology and bind identities]\n P --> C[Scope graph and collect registered observations]\n C --> T[Deterministic triage]\n T -->|Sufficient known signature| R[Mechanically assessed report]\n T -->|Unknown or ambiguous| A{Agent explicitly enabled?}\n A -->|No| R\n A -->|Yes| B[One bounded investigator: inspect / probe]\n B --> R\n R --> H[Human review]\n H --> S[Optional separate human resolution record]`, caption: "No remediation executor or automatic rule learning follows this flow."},
-        p("Python owns the workflow and authority boundaries. The optional investigator controls only uncertain exploration within the prepared context and approved tool catalog. No consuming application modules or injected fault labels enter the kernel."),
+      {id: "why", title: "Why a graph", blocks: [
+        p("An incident rarely starts where the alert fires. A slow pipeline may be caused by a feature service, its database, or a vendor feeding it. The operational graph records what depends on what, so an investigation can look upstream of the symptom without reading the whole estate. It is context for reasoning; a connected path is never treated as proof of cause."),
+        p("Under the hood it is a Pydantic-validated snapshot loaded into a NetworkX `MultiDiGraph`, so parallel relationships of different kinds between the same two entities are kept. No graph database is required."),
       ]},
-      {id: "packages", title: "Package responsibilities", blocks: [
-        table(["Package", "Responsibility"], [["core", "Validated incidents, entities, relationships, queries, evidence, hypotheses, assessments, and budgets."], ["graph", "NetworkX MultiDiGraph, identity normalization, bounded traversal, JSON/DOT/SVG/terminal views."], ["connectors", "Read-only topology and observation adapters; optional dependencies stay outside core imports."], ["checks", "Conservative signatures and caller-owned TriageGuard sufficiency."], ["reasoning / models", "Candidate sources, deterministic assessment, and optional single-completion model adapters."], ["investigation", "One reference Pydantic AI investigator, scoped tools, receipts, and typed reports."], ["sandbox", "Opt-in resource-limited Docker experiments against approved copied source."], ["runtime", "YAML preparation, discovery, incident handling, scaffold, and SQLite records."], ["security / cli", "Conservative redaction and explicit public composition."]]),
+      {id: "build", title: "Where the graph comes from", blocks: [
+        diagram(`flowchart TB
+    Y["Declared graph<br/>(lumis.yaml)"] --> B
+    T["External topology<br/>JSON"] --> B
+    K["Kubernetes<br/>resources + app labels"] --> B
+    P["Prometheus<br/>service-graph metric"] --> B
+    W["Prefect / Tempo<br/>workflow and trace topology"] --> B
+    B["Discovery + identity binding<br/>aliases, namespaces, fail closed on conflicts"] --> G["Operational graph"]
+    G --> S["Incident scope<br/>neighbourhood of the affected entities<br/>within hop and entity budgets"]
+    S --> R["Triage and investigator<br/>see only this scope"]`),
+        p("Declared entities carry what discovery cannot know: owners, criticality, external vendors, idle dependencies. Enabled sources add what exists right now. If an enabled source fails, preparation stops with a sanitized report rather than continuing with a partial graph."),
       ]},
-      {id: "graph", title: "A graph for context, not causal proof", blocks: [
-        p("Pydantic validates portable GraphSnapshot contracts; NetworkX MultiDiGraph preserves directed parallel relationship kinds. The graph primarily scopes reasoning. Visualization is optional, no graph database is required, and a connected path does not prove a causal explanation."),
-        table(["Identity or edge", "Convention"], [["Logical service", "service:<namespace>:<name> from approved app labels, OTLP, or service-graph metrics."], ["Kubernetes resource", "k8s:<namespace>:<kind>:<name>; stays distinct from the logical service."], ["hosts", "Resource → logical service; does not assert a runtime call."], ["serves", "Server/dependency → client/caller. Upstream of frontend includes its database."], ["Declared lineage", "Dataset → job → dataset via feeds/produces with explicit provenance."], ["Aliases", "Explicit raw ID → canonical ID reconciliation; no guessed bare-name joins."]]),
-        p("Aliases with cycles, incompatible kinds, or conflicting metadata fail validation. Namespaces prevent accidental cross-estate joins. Business context can enrich declared entities without granting action authority."),
+      {id: "ids", title: "Identities and directions", blocks: [
+        table(["Identity or relationship", "Convention"], [
+          ["Logical service", "`service:<namespace>:<name>`, from app labels, OpenTelemetry or service-graph metrics."],
+          ["Kubernetes resource", "`k8s:<namespace>:<kind>:<name>`. Kept distinct from the logical service."],
+          ["`hosts`", "Resource → logical service. Says where a service runs, not that it was called."],
+          ["`serves`", "Server or dependency → client. So “upstream of the frontend” includes its database."],
+          ["Declared lineage", "Dataset → job → dataset (`feeds`, `produces`), with explicit provenance."],
+          ["Aliases", "Explicit raw ID → canonical ID. Bare names are never guessed or joined."],
+        ]),
+        p("Namespaces keep two estates from merging by accident. Conflicting kinds or metadata fail validation instead of being silently resolved."),
       ]},
-      {id: "traversal", title: "Bounded traversal and exports", blocks: [
-        code("python", 'from lumis_sdk.runtime import YamlProject\n\nprepared = await YamlProject.from_file("lumis.yaml").prepare()\ngraph = prepared.graph\nupstream = graph.upstream_of("service:demo", hops=3, max_entities=100)\nlocal = graph.dependencies_within("service:demo", hops=2, max_entities=100)\nscoped = graph.scope(["service:demo"], hops=2, max_entities=100)\nnx_copy = graph.to_networkx()\ndot = graph.to_dot()'),
-        p("Use top-level await in notebooks; wrap awaited code with asyncio.run(main()) in an ordinary script. Upstream/downstream return sorted ID tuples excluding the seed. Scope includes seeds and traverses both directions; hops=0 retains only seeds. Cycles terminate, and unknown IDs or entity overflow fail instead of truncating. Exports are independent deep copies."),
+      {id: "scope", title: "Scoping to an incident", blocks: [
+        p("For each incident Lumis keeps the neighbourhood of the affected entities, bounded by `budget.graph_hops` and `budget.max_entities`. If the neighbourhood would exceed the entity budget, preparation fails rather than truncating silently. Both triage and the investigator work only inside this scope."),
+        code("python", 'from lumis_sdk.runtime import YamlProject\n\nprepared = await YamlProject.from_file("lumis.yaml").prepare()\ngraph = prepared.graph\nupstream = graph.upstream_of("service:shop:checkout", hops=3, max_entities=100)\nlocal = graph.dependencies_within("service:shop:checkout", hops=2, max_entities=100)\nscoped = graph.scope(["service:shop:checkout"], hops=2, max_entities=100)\nnx_copy = graph.to_networkx()\ndot = graph.to_dot()'),
+        p("Use top-level `await` in a notebook, or wrap the code in `asyncio.run(main())` in a script. Exports are deep copies, so changing them cannot change an investigation."),
       ]},
-      {id: "discovery", title: "Preparation is a separate bounded step", blocks: [
-        p("prepare() merges declared topology and explicitly enabled sources, then strictly binds graph/query references. Discovery has separate estate-size and time limits. An enabled source failure yields a sanitized incomplete report and stops preparation; a partial graph is diagnostic only. Investigation does not silently proceed with it."),
-        p("Evidence-query failure during investigation is different: it is audited and may lead to abstention. Retaining a PreparedProject explicitly reuses a snapshot; it does not refresh topology. Live Kubernetes reads current resources, not historical cluster state. Archive normalized inputs externally for reproducible replay."),
-        note("Structure and changes are distinct", "Local OTLP exports, scoped Tempo trace topology, Prefect topology, and declared dataset/job relationships are supported. Recent Git commits and Kubernetes rollouts are time-bounded evidence about graph entities, not extra causal-path nodes. A live OTLP receiver, OpenLineage ingestion, temporal graph history, and recent_changes_affecting are not current graph APIs.", "amber"), source("architecture.md"), source("graph.md"),
+      {id: "limits", title: "Limits", blocks: [
+        list(
+          "Live Kubernetes discovery reads current resources, not historical cluster state. Archive topology snapshots yourself if you need exact replay.",
+          "Recent Git commits and rollouts are evidence about entities, not graph nodes. See [evidence and queries](/docs/evidence).",
+          "There is no live OpenTelemetry receiver and no OpenLineage ingestion yet.",
+        ),
+        source("graph.md", "Graph and lineage"),
       ]},
     ],
   },
   {
-    slug: "investigation", group: "Understand", label: "Incident investigation", title: "Test competing explanations against evidence",
-    description: "Understand deterministic triage, terminal sufficiency, bounded inspect/probe tools, falsifiable hypotheses, mechanical assessments, report semantics, and human resolution.",
+    slug: "evidence", group: "Concepts", label: "Evidence and queries", title: "Evidence and queries",
+    description: "How Lumis collects facts: operator-registered queries, typed observations with provenance, the incident time window, and why missing data is never a zero.",
     sections: [
-      {id: "triage", title: "Known signatures before uncertain reasoning", blocks: [
-        p("checks are diagnostic signatures expressed as hypotheses with predictions and falsifiers. Each finding is match, no_match, or unknown. Missing, degraded, conflicting, or failed observations never become a clean match. A failed tool call is not a false measurement."),
-        p("A terminal signature must explicitly set terminal: true and explains_entities; predict at least two distinct entity/key observables with independently supplied evidence; be supported with no matching falsifier; cover every affected entity; and leave all other in-scope signatures contradicted. An optional caller-owned TriageGuard can require more."),
-        note("Two observations are a minimum, not causal proof", "The SDK's structural sufficiency check does not establish statistical independence. Operators choose discriminating evidence. A symptom such as OOM termination may remain nonterminal because it does not distinguish a leak from a larger batch or a changed memory limit.", "amber"),
-        p("A sufficient signature returns a report without creating a provider, reading code, or running a probe. Ambiguous, nonterminal, competing, or unknown findings route to the optional investigator when enabled; otherwise they route to a human."),
+      {id: "queries", title: "Registered queries", blocks: [
+        p("Every fact Lumis uses comes from a query you registered in `lumis.yaml`. A query has an ID, a provider, the entity it describes, the key of the fact it produces, a description, and provider parameters such as PromQL or SQL. Neither a check nor the model can run anything else."),
+        code("yaml", "queries:\n  - id: checkout-error-logs\n    provider: loki\n    entity_id: service:shop:checkout\n    key: error_entries\n    description: Checkout error log lines during the incident\n    parameters:\n      logql: '{namespace=\"shop\", app=\"checkout\"} |= \"error\"'\n      output: count"),
+        table(["Provider", "Typical use"], [
+          ["`prometheus`", "Metrics as one instant scalar at the end of the incident."],
+          ["`loki`", "Log entries or counts in the incident window."],
+          ["`tempo`", "Trace searches, durations and span reads."],
+          ["`prefect`", "Flow and task run states and durations."],
+          ["`sql`", "One read-only scalar from PostgreSQL."],
+          ["`changes`", "Recent Git commits and Kubernetes rollouts for an entity."],
+          ["`snapshot`", "Facts replayed from a file (tests, offline runs)."],
+          ["`probe`", "Results of an opt-in sandbox experiment (degraded quality)."],
+        ]),
+        p("Details for each provider are in [connectors](/docs/connectors)."),
       ]},
-      {id: "hypotheses", title: "What makes an explanation testable?", blocks: [
-        table(["Hypothesis field", "Purpose"], [["id / statement", "Stable candidate identity and a falsifiable explanation."], ["causal_path", "References to entities in the prepared incident graph, not certified causality."], ["evidence_needed", "Registered query IDs whose entity/key observations cover the checks."], ["predictions", "Observations expected if the explanation holds."], ["falsifiers", "Observations that would contradict the explanation."]]),
-        code("yaml", 'checks:\n  - id: service-health\n    terminal: false\n    hypothesis:\n      id: unavailable\n      statement: Service unavailability may explain the failure.\n      causal_path: ["service:demo"]\n      evidence_needed: [health]\n      predictions:\n        - {entity_id: "service:demo", key: healthy, operator: eq, value: false}\n      falsifiers:\n        - {entity_id: "service:demo", key: healthy, operator: eq, value: true}'),
-        p("Merge this into a complete project containing service:demo and the health query. rule_hypotheses belongs to the lower-level candidate-source baseline; it is not a triage sufficiency gate. Put primary incident signatures in checks."),
+      {id: "observations", title: "What an observation contains", blocks: [
+        table(["Field", "Meaning"], [
+          ["`query_id`, `entity_id`, `key`", "Which registered query produced it, about which entity, for which fact. Must match the registration."],
+          ["`value`", "One scalar: number, boolean or short text. Booleans are never treated as 1 or 0."],
+          ["`observed_at`", "When it was observed. Must fall inside the incident window."],
+          ["`source`, `retrieval_method`", "Provenance: where it came from and how."],
+          ["`quality`", "`observed`, or `degraded` when a result was capped, partial or synthetic."],
+        ]),
       ]},
-      {id: "tools", title: "One investigator, two tool families", blocks: [
-        table(["Operation", "Authority"], [["inspect / catalog", "Discover scoped query IDs, approved files, and enabled capabilities."], ["inspect / graph", "Read a one-hop neighborhood within the already scoped incident graph."], ["inspect / evidence", "Call a registered query ID; never invent PromQL, LogQL, TraceQL, or SQL."], ["inspect / changes", "List configured recent commits/rollouts touching scoped entities, newest first."], ["inspect / code.read, code.search", "Read or literal-search an explicit allowlist of approved text files."], ["inspect / git.log, git.diff", "Fixed read-only local commands and full-SHA diffs on approved paths."], ["inspect / hypothesis.register", "Validate and bind a candidate before probing; revisions require a new identity."], ["probe", "Test a registered candidate/query in an explicitly enabled resource-limited container."]]),
-        p("Tool arguments and final candidates are validated against graph IDs, the query catalog, and known evidence/receipt references. The reference agent can repair rejected arguments/output up to validation_retries; retries still consume budgets. The handler validates again and drops invalid candidates and dependent suggestions while retaining valid results and rejection reasons."),
+      {id: "unknown", title: "Missing data is unknown, never zero", blocks: [
+        p("If a query fails, times out or returns nothing, no fact is recorded and any check that needed it stays `unknown`. A failed query is not a false measurement. This sounds obvious, but it is the most common way investigation tools go wrong."),
+        note("A lesson from GridCast", "Prometheus `rate()` cannot see the first event of a brand-new series, and `or vector(0)` then turns that blind spot into a confident “zero”. In our first evaluation run, every wrong conclusion rested on a false zero like this. Write queries that return no data when there is no data.", "amber"),
+        p("Degraded facts (a capped log result, a sandbox probe) can guide a person or the investigator, but cannot satisfy a terminal check."),
       ]},
-      {id: "assessment", title: "Mechanical support, contradiction, and uncertainty", blocks: [
-        p("Every prediction must be supported and every falsifier false for a candidate to be supported. Contradiction takes precedence. Conflicting values, missing checks, degraded facts, or incompatible scalar types leave checks unresolved. A boolean is not treated as the number 1."),
-        table(["State", "Interpretation"], [["supported", "Usable observations support predictions and reject falsifiers; not causal confirmation."], ["contradicted", "At least one prediction fails or a falsifier is supported."], ["unresolved", "Evidence is missing, degraded, conflicting, or insufficient to decide."]]),
-        p("Model-authored probe output is quality: degraded. It can guide a human or further investigation, but cannot certify independent production evidence or a supported diagnosis. A model could simply print its expected result."),
-      ]},
-      {id: "reports", title: "Reports keep the uncertainty visible", blocks: [
-        p("IncidentReport retains context, triage findings, mechanically assessed candidates, redacted receipts, tentative suggestions, unresolved questions, route, stop reason, and request/token/tool/query/probe usage. It does not retain raw chain-of-thought or the full provider conversation. Caller-side PydanticInvestigator.messages is an in-memory evaluation surface, not report content."),
-        table(["Report field", "Values / meaning"], [["route", "deterministic, agent, or human."], ["conclusion", "supported_diagnosis, insufficient_evidence, or requires_human_expert."], ["truth_state", "Always unconfirmed_hypothesis in the current incident contract."], ["requires_human_review", "Always true."], ["stop_reason", "Distinguishes completion, budget exhaustion, invalid output, deadline, or rejected/unavailable investigator."]]),
-        p("A supported_diagnosis additionally requires viable candidates to agree on one root cause. A resource that hosts a service is treated as that service for this comparison. Competing supported roots yield insufficient_evidence and remain listed as unresolved questions; the SDK does not invent a ranking. Unresolved viable candidates also prevent a supported diagnosis."),
-        p("Provider failures and budget exhaustion preserve collected evidence, receipts, and registered candidates for assessment. Without a final answer there are no final suggestions. Patch text is a tentative suggestion only; it is never applied."),
-      ]},
-      {id: "resolutions", title: "Human outcomes are separate attestations", blocks: [
-        p("IncidentStore saves immutable report/evidence/receipt rows atomically in SQLite. A HumanResolution records id, incident_id, reviewer, timezone-aware recorded_at, summary, applied_change, outcome (resolved / not_resolved / inconclusive), and optional evidence references. Only a human calls record_resolution after the incident is stored."),
-        note("Recording is not verification or learning", "A manual attestation does not update diagnostic truth, execute a change, establish causality, or promote a rule. Apply and verify any operational change outside the SDK.", "amber"), source("incident-investigation.md"),
+      {id: "window", title: "Time window and budgets", blocks: [
+        p("Queries run against the incident window, `started_at` to `ended_at`: Prometheus instant queries are evaluated at `ended_at`, and log, trace, workflow and SQL queries are bounded by the window. List queries in `initial_query_ids` to collect them before anything else runs."),
+        p("Triage and the investigator share one query budget (`budget.max_queries`). Repeated requests for the same query reuse the first result; failed queries are not retried invisibly."),
+        source("configuration.md", "YAML reference"),
       ]},
     ],
   },
   {
-    slug: "configuration", group: "Build", label: "YAML configuration", title: "Configure an explicit, read-only investigation",
-    description: "Reference for the lumis.dev/operational-v1alpha1 YAML schema, query catalog, incident observations, discovery bounds, investigator settings, and optional model configuration.",
+    slug: "triage", group: "Concepts", label: "Checks and triage", title: "Checks and triage",
+    description: "Write known failure patterns as deterministic checks, understand match, no_match and unknown, and the strict rules for when triage may conclude without a model.",
     sections: [
-      {id: "contract", title: "A strict project contract", blocks: [
-        p("The active api_version is lumis.dev/operational-v1alpha1. Unknown fields, duplicate mapping keys, aliases, excessive nesting, and documents over 1 MiB are refused. Identifiers and endpoints are explicit strings; checks use native booleans or matching scalar types. Incident and observation timestamps are timezone-aware."),
-        code("yaml", 'api_version: lumis.dev/operational-v1alpha1\nproject: {name: demo-estate, environment: local}\npolicies: {default_action_mode: read_only}\nobservations_file: observations.json\ngraph:\n  entities:\n    - {id: "service:demo", kind: service, name: Demo service}\n  relationships: []\nqueries:\n  - id: health\n    provider: snapshot\n    entity_id: service:demo\n    key: healthy\n    description: Was the service healthy during the incident?\ninitial_query_ids: [health]\nchecks:\n  - id: service-health\n    terminal: false\n    hypothesis:\n      id: unavailable\n      statement: Service unavailability may explain the failure.\n      causal_path: ["service:demo"]\n      evidence_needed: [health]\n      predictions:\n        - {entity_id: "service:demo", key: healthy, operator: eq, value: false}\n      falsifiers:\n        - {entity_id: "service:demo", key: healthy, operator: eq, value: true}'),
-        p("This is an offline project fragment with one nonterminal signature. Supply a valid incident and observations; use init to generate both. Validate edits with lumis doctor. read_only is the only accepted action mode; approval_required does not enable a hidden executor."),
+      {id: "checks", title: "A check is a falsifiable known pattern", blocks: [
+        p("A check describes a failure you already know how to recognise, written as a hypothesis: what it explains, which facts it needs, what those facts should look like if it is happening, and what would prove it is not."),
+        code("yaml", "checks:\n  - id: pod-oom-killed\n    terminal: false\n    hypothesis:\n      id: oom-killed\n      statement: A container was OOM-killed during the incident.\n      causal_path: [service:shop:checkout]\n      evidence_needed: [checkout-oom-kills]\n      predictions:\n        - {entity_id: \"service:shop:checkout\", key: oom_kills, operator: gt, value: 0}\n      falsifiers:\n        - {entity_id: \"service:shop:checkout\", key: oom_kills, operator: eq, value: 0}"),
+        p("Operators are `eq`, `ne`, `gt`, `ge`, `lt` and `le`. Ordered comparisons need numbers."),
       ]},
-      {id: "fields", title: "Project fields and evidence identity", blocks: [
-        table(["Field", "Meaning"], [["sources", "Explicitly enabled topology/observation connectors; disabled by default."], ["identity.aliases", "Raw discovered ID → compatible canonical ID, without chains or cycles."], ["discovery", "Separate estate preparation limits."], ["graph", "Unique entities and relationships with declared direction and provenance."], ["queries", "Unique operator-owned provider/entity/key/description/parameters catalog."], ["initial_query_ids", "Observations collected before generation; share the investigation query budget."], ["checks", "Known diagnostic signatures for incident triage."], ["rule_hypotheses", "Candidate-only baseline source; does not end incident triage."], ["models / investigator", "Explicit optional model and scoped tool-agent settings."], ["observations_file", "Replay facts relative to the project directory; explicit observations override it."]]),
-        p("Incident fields are id, affected_entities, symptoms, started_at, ended_at. Evidence fields are id, query_id, entity_id, key, scalar value, observed_at, source, retrieval_method, and quality (observed or degraded). Observation identity must match the registered query, and time must fall within the incident window. Evidence provenance is operator-owned."),
-        p("Check operators are eq, ne, gt, ge, lt, le. Ordered comparisons require numeric, nonboolean values. Query/check references must exist; discovered membership is bound during preparation. Doctor success alone is not proof external identities exist."),
+      {id: "findings", title: "Findings", blocks: [
+        table(["Finding", "Meaning"], [
+          ["`match`", "Every prediction is supported by a usable fact and no falsifier holds."],
+          ["`no_match`", "A prediction fails, or a falsifier holds."],
+          ["`unknown`", "A needed fact is missing, degraded or conflicting."],
+        ]),
       ]},
-      {id: "budgets", title: "Preparation and investigation budgets", blocks: [
-        code("yaml", 'discovery:\n  timeout_seconds: 30\n  max_entities: 5000\n  max_relationships: 10000\n  max_service_graph_series: 1000\n  max_response_bytes: 2000000\nbudget:\n  graph_hops: 3\n  max_entities: 100\n  max_queries: 8\n  max_hypotheses: 5\n  max_model_output_tokens: 3000\n  max_context_characters: 20000\n  query_timeout_seconds: 10\n  source_timeout_seconds: 30\n  total_timeout_seconds: 120'),
-        p("These are example limits, not performance claims. Overflow is refused instead of silently truncating topology. Triage and agent evidence reads share query limits; cached repeated queries reuse evidence, and failed observations are not retried invisibly. Preparation and investigation have independent deadlines."),
+      {id: "terminal", title: "When triage may conclude", blocks: [
+        p("A matched check ends triage only if all five conditions hold:"),
+        list(
+          "It is marked `terminal: true` and declares `explains_entities`.",
+          "It predicts at least two distinct entity/key facts, supplied by independent queries.",
+          "Its predictions are supported and no falsifier holds.",
+          "It covers every affected entity, and every other check in scope is contradicted.",
+          "An optional caller-supplied `TriageGuard` also accepts it.",
+        ),
+        diagram(`flowchart TD
+    F["Each check → finding:<br/>match · no_match · unknown"] --> T{"Terminal check<br/>sufficient?<br/>(all five rules)"}
+    T -->|yes| D["supported_diagnosis<br/>(no model, no code read)"]
+    T -->|no| A{"Investigator<br/>enabled?"}
+    A -->|yes| I["Investigator runs with findings<br/>and collected evidence as leads"]
+    A -->|no| H["requires_human_expert<br/>(findings and evidence attached)"]`, "Triage routing."),
+        note("Two facts are a minimum, not proof", "The rule is structural; it does not establish statistical independence or causality. Choose evidence that genuinely discriminates. An OOM kill, for example, is better left nonterminal: it explains the crash, but not whether a leak, a larger batch or a lower memory limit caused it.", "amber"),
       ]},
-      {id: "agent", title: "Optional investigator settings", blocks: [
-        code("yaml", 'models:\n  provider: openrouter\n  model: your-provider/your-tool-capable-model\n  api_key_env: OPENROUTER_API_KEY\ninvestigator:\n  budget:\n    request_limit: 8\n    tool_calls_limit: 10\n    max_probes: 2\n    output_tokens_limit: 12000\n    max_tool_characters: 8000\n    max_total_tool_characters: 32000\n    validation_retries: 2\n  repositories:\n    - id: application\n      root: ./approved-source\n      entity_ids: ["service:demo"]\n      files: [src/handler.py, pyproject.toml]\n      include_commit_subjects: false\n  sandbox:\n    enabled: false'),
-        p("This does not call a model. Install the agent extra and explicitly pass use_agent=True or --use-agent. All mapped repository entities must belong to incident scope. Every tool attempt, including denial or malformed arguments, consumes the broker budget. Keep files reviewed, narrowly scoped, and free of secrets."),
-        p("Provider choices are openrouter, openai, anthropic, gemini; default credential names are OPENROUTER_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY. There is no default model ID or cross-provider fallback. Optional reasoning is minimal, low, medium, or high; omission keeps the provider default. Baseline --use-model is distinct from --use-agent."), source("configuration.md"), source("models.md"),
+      {id: "good", title: "Writing good checks", blocks: [
+        list(
+          "Start nonterminal. A matched nonterminal check is a lead handed to the investigator or to a person.",
+          "Make a check terminal only when two independent signals both point the same way, and both report a real value when the failure happens (see [missing data](/docs/evidence#unknown)).",
+          "Write falsifiers. A check that cannot be contradicted cannot be tested.",
+          "Keep one check per mechanism. Overlapping checks that both match will block a terminal conclusion, by design.",
+        ),
+        p("In the GridCast evaluation, ten checks covered the ten original scenarios. Only one was terminal: “planning API scaled to zero”, which concluded in about 60 milliseconds and was right every time. The other nine were leads."),
+        source("incident-investigation.md", "Incident investigation"),
       ]},
     ],
   },
   {
-    slug: "connectors", group: "Build", label: "Connectors & telemetry", title: "Connect observations, not unrestricted commands",
-    description: "Configure scoped Kubernetes discovery, OTLP exports, Prometheus, Loki, Tempo, Prefect, normalized snapshots, and approved code/Git for Lumis incident investigations.",
+    slug: "investigator", group: "Concepts", label: "The investigator", title: "The investigator",
+    description: "The optional tool-using model: when it runs, the tools it can use, its budgets, how its output is validated, and what it can never do.",
     sections: [
-      {id: "boundary", title: "Keep the application independent", blocks: [
-        p("Instrument your application using standard telemetry. Configure Lumis externally, declare canonical graph identities, register discriminating queries, and provide an explicit incident window. The model requests query IDs; it does not rewrite endpoints, selectors, credentials, limits, or operational commands."),
-        table(["Source", "Current capability"], [["Snapshots", "Local normalized GraphSnapshot and Evidence contracts; offline replay."], ["Kubernetes", "Read-only context/namespace-scoped services, deployments, pods, ReplicaSets; resource-to-service identity bridges."], ["OpenTelemetry", "Bounded local resourceSpans JSON export normalization; not a live receiver."], ["Prometheus", "Instant scalar/single-series observations; existing service-graph metrics can add topology."], ["Loki", "Incident-window registered LogQL entries/count queries."], ["Tempo", "Scoped TraceQL search, explicit/searched trace span reads, bounded observed topology."], ["Prefect", "Allowlisted flow/task observations and optional observed workflow/task topology."], ["Code / Git", "Explicit allowlisted text snapshots, literal search, bounded local log and full-SHA diff."]]),
-        note("Qualification is separate from implementation", "Connector tests and limited read-only transport checks do not prove representative live diagnosis, complete telemetry, or all cookbook scenarios. Verify scope, identities, permissions, query semantics, privacy, and coverage in your estate.", "amber"),
+      {id: "when", title: "When it runs", blocks: [
+        p("Only when triage is not sufficient and you opted in, with `--use-agent` on the CLI or `use_agent=True` in Python. It is one Pydantic AI agent with typed output, not a multi-agent system. It starts from the triage findings and the evidence already collected."),
       ]},
-      {id: "topology", title: "Start with scoped topology", blocks: [
-        code("yaml", 'sources:\n  kubernetes:\n    enabled: true\n    context: my-approved-context\n    namespace: my-estate\n  opentelemetry:\n    enabled: true\n    export_file: ./telemetry/traces.json'),
-        p("Merge source examples into a complete project. Kubernetes requires kubectl and read access; no all-namespace scan, environment/secret extraction, kubeconfig edit, or workload mutation occurs. OTLP export paths are relative to YAML. Port 4317 is ingestion, not an observation retrieval API. Query Tempo for traces or use an export file."),
-        p("An enabled topology source failure blocks preparation. Declared metadata enriches what discovery cannot know, but does not grant actions. Prometheus topology needs existing service-graph metrics, explicit estate namespace, and a scoped vector expression; arbitrary up metrics cannot reveal a call graph."),
+      {id: "tools", title: "What it can do", blocks: [
+        p("The investigator has two tools, `inspect` and `probe`. `inspect` has a fixed set of operations:"),
+        table(["Operation", "What it allows"], [
+          ["`catalog`", "List the registered query IDs, approved files and enabled capabilities."],
+          ["`graph`", "Read a one-hop neighbourhood inside the incident scope."],
+          ["`evidence`", "Run a registered query by ID. It cannot write PromQL, LogQL, TraceQL or SQL."],
+          ["`changes`", "List recent commits and rollouts that touch scoped entities, newest first."],
+          ["`code.read`, `code.search`", "Read or literally search an explicit allowlist of text files."],
+          ["`git.log`, `git.diff`", "Fixed, read-only Git commands on approved paths."],
+          ["`hypothesis.register`", "Register a falsifiable explanation before testing it."],
+        ]),
+        p("`probe` runs a generated Python experiment in a disabled-by-default, network-less container. Its results are marked degraded. See [safety and limits](/docs/safety)."),
       ]},
-      {id: "metrics", title: "Register discriminating observations", blocks: [
-        code("yaml", 'sources:\n  prometheus:\n    enabled: true\n    endpoint: http://localhost:9090\nqueries:\n  - id: service-up\n    provider: prometheus\n    entity_id: service:demo\n    key: up\n    description: Availability at incident end\n    parameters:\n      promql: \'min(up{job="demo"})\''),
-        p("The instant query runs at incident end and needs one finite scalar or one vector series; operators aggregate explicitly. A backend outage, malformed response, or empty result supplies no fact. Register queries in initial_query_ids or a check to use them without an agent."),
+      {id: "code", title: "Giving it code context", blocks: [
+        code("yaml", "investigator:\n  repositories:\n    - id: application\n      root: ./approved-source\n      entity_ids: [\"service:shop:checkout\"]\n      files: [src/checkout/handler.py, deploy/releases.yaml]\n      include_commit_subjects: false"),
+        p("Each repository is mapped to the entities it belongs to, and only the listed files are readable. Files are snapshotted once per investigation, redacted and hashed. Paths outside the list, symlinks, binary or oversized files, and secret or dot directories are refused."),
       ]},
-      {id: "logs-traces-workflows", title: "Loki, Tempo, and Prefect", blocks: [
-        code("yaml", 'sources:\n  loki:\n    enabled: true\n    endpoint: https://approved-log-gateway.example\n    headers_env:\n      Authorization: LUMIS_LOKI_AUTHORIZATION\n      X-Scope-OrgID: LUMIS_LOKI_TENANT\n    max_results: 50\n  tempo:\n    enabled: true\n    endpoint: http://localhost:3200\n    max_results: 50\n  prefect:\n    enabled: true\n    endpoint: http://localhost:4200/api\n    flow_names: [daily-forecast]\n    max_results: 50'),
-        p("Loki/Tempo endpoints must be query frontends, not ingestion distributors. Prefect uses its API base, including /api and any account/workspace prefix. Endpoint credentials, query strings, and fragments are refused. Environment header references resolve only for the configured source and fail closed when absent; never place tokens in YAML."),
-        table(["Provider", "Registered parameters / observations"], [["loki", "logql; output entries or count. Require a nonempty exact stream label matcher."], ["tempo", "traceql with exact resource scope; output entries/duration_ms/spans, or trace_id for explicit spans."], ["prefect", "Allowlisted flow_name; flow_runs or task_runs with explicit flow_run_id; entries, failed_count, max_duration_ms."]]),
-        p("Log counts are not failure rates, trace matches are not population percentiles, and returned samples are not silently averaged. Prefect queries read current state for runs started within the incident with in-window state timestamps; they cannot reconstruct all historical or preexisting long-running jobs. Filter POST requests are read-only."),
+      {id: "budgets", title: "Budgets", blocks: [
+        code("yaml", "investigator:\n  budget:\n    request_limit: 8\n    tool_calls_limit: 10\n    max_probes: 2\n    output_tokens_limit: 12000\n    max_tool_characters: 8000\n    max_total_tool_characters: 32000\n    validation_retries: 2"),
+        p("These are example values. Every tool attempt, including a denied or malformed one, counts. When a budget runs out, the evidence and hypotheses collected so far are still assessed and reported."),
       ]},
-      {id: "limits", title: "Bounds and incomplete evidence", blocks: [
-        p("Loki/Tempo/Prefect have item, byte, request, and deadline limits; no hidden retries, redirects, or implicit pagination. Empty results produce no invented zero. Capped observations are degraded and cannot certify triage. Narrow a query/window instead of treating a truncated result as complete."),
-        p("Tempo topology joins observed cross-service parents within explicit namespace/time scope. Missing parents create no fabricated edge. Prefect can build observed flow/task containment and feeds edges; neither guarantees complete lineage or historical replay."),
-        p("The current development SDK also includes read-only PostgreSQL evidence via the sql extra. It is an observation adapter, not an action or arbitrary model SQL tool."),
-        code("yaml", 'sources:\n  sql:\n    enabled: true\n    dsn_env: ESTATE_READONLY_DSN\n    statement_timeout_ms: 5000\n    connect_timeout_seconds: 5\nqueries:\n  - id: incident-events\n    provider: sql\n    entity_id: service:demo\n    key: event_count\n    description: Registered event count during the incident\n    parameters:\n      sql: >-\n        SELECT count(*) FROM operational_events\n        WHERE at >= %(started_at)s AND at <= %(ended_at)s'),
-        p("Install with uv sync --extra sql. Replace the example table and query with reviewed SELECT-only access. Each query is one SELECT/WITH statement returning exactly one row/column (number, boolean, or redacted text); NULL supplies no observation. Only started_at/ended_at parameters are accepted. Read-only transactions are rolled back and bounded by a timeout, but are not a permission boundary: use a database role that can only SELECT approved tables. The DSN is read from the named environment variable, never inline YAML."),
-        p("OpenLineage ingestion, automatic incident subscription, and remediation connectors remain future work. For unsupported observations, provide reviewed normalized facts through the public contract; do not let the model manufacture missing evidence."), source("telemetry-connectors.md"), source("integrations.md"),
+      {id: "validation", title: "How its output is checked", blocks: [
+        p("The model's final answer is checked against the same rules Lumis applies afterwards: graph IDs must exist, `evidence_needed` must name registered queries, a revised hypothesis needs a new ID, and suggestions may cite only evidence Lumis actually issued. Problems are sent back to the model to repair, up to `validation_retries` times. Anything still invalid is dropped, and the reason is listed in the report."),
+        table(["Stop reason", "Meaning"], [
+          ["`agent_completed`", "The investigator returned a valid answer."],
+          ["`agent_budget_exhausted`", "A request, tool or token limit was reached."],
+          ["`agent_output_invalid`", "The answer could not be repaired within the retries."],
+          ["`deadline_exceeded`", "The total time budget ran out."],
+          ["`investigator_rejected_or_unavailable`", "Provider or other failure; the report names the exception type and HTTP status."],
+        ]),
       ]},
-      {id: "changes", title: "Recent changes as checkable evidence", blocks: [
-        p("sources.changes attributes recent Git commits and Kubernetes rollouts to existing graph entities. inspect(changes) lists records in incident scope; a registered provider: changes query makes them usable in predictions/falsifiers. A change is evidence about a service, not a graph node or proof it caused the incident."),
-        code("yaml", 'sources:\n  changes:\n    enabled: true\n    lookback_seconds: 3600\n    max_records: 50\n    git:\n      - id: gitops\n        root: ../gitops\n        paths:\n          services/demo/: ["service:demo"]\nqueries:\n  - id: demo-changes\n    provider: changes\n    entity_id: service:demo\n    key: release_changes_30m\n    description: Recent mapped changes before incident end\n    parameters: {output: count, lookback_seconds: "1800"}'),
-        p("count returns mapped changes in the lookback; an empty Git history can supply a zero, while expired Kubernetes history is incomplete. seconds_since_latest returns the newest change age; absence supplies no age fact. Capped records degrade count evidence. Repository path mappings are operator-owned, with optional conventional-commit scope mappings."),
-        p("Set kubernetes_rollouts: true only with the scoped Kubernetes source enabled. New ReplicaSet creation records a rollout; rollback/reactivation is visible through expiring ScalingReplicaSet events, not old creation timestamps. Scaling a Deployment alone is not a rollout. Git is the durable record; Kubernetes can confirm the change reached the cluster. Any unreadable backend makes change history unavailable rather than silently partial."),
+      {id: "cannot", title: "What it can never do", blocks: [
+        list(
+          "Write its own queries, read files outside the allowlist, or run shell commands.",
+          "Add facts. It can only ask for registered queries; Lumis records what they return.",
+          "Mark anything as confirmed, or decide the conclusion. Lumis assesses its hypotheses mechanically.",
+          "Change your systems. Suggestions, including patch text, are never applied.",
+        ),
+        note("Cost and time in practice", "On GridCast, with DeepSeek v4 pro at high reasoning effort, a full Lumis investigation took a median of about four minutes and cost about $0.14 in model fees. Your model, estate and budgets will change both.", "green"),
+        source("incident-investigation.md", "Incident investigation"),
       ]},
     ],
   },
   {
-    slug: "api", group: "Build", label: "Python API & CLI", title: "Compose the incident API, CLI, and audit store",
-    description: "Use YamlProject.handle_incident, prepared operational graphs, IncidentStore, manual HumanResolution records, CLI exports, and bounded extension protocols.",
+    slug: "reports", group: "Concepts", label: "Assessment and reports", title: "Assessment and reports",
+    description: "How hypotheses are assessed, how a report reaches its conclusion, what the report contains, and how human resolutions are recorded separately.",
     sections: [
-      {id: "python", title: "The recommended Python incident API", blocks: [
-        code("python", 'import asyncio\nfrom pathlib import Path\nfrom lumis_sdk.core import Incident\nfrom lumis_sdk.runtime import YamlProject, IncidentStore\n\nasync def main():\n    workspace = Path("/tmp/lumis-demo")\n    incident = Incident.model_validate_json(\n        (workspace / "incident.json").read_text()\n    )\n    project = YamlProject.from_file(workspace / "lumis.yaml")\n    report = await project.handle_incident(incident)\n    # Set observations_file in YAML to replay facts automatically.\n    print(report.conclusion, report.truth_state)\n    assert report.requires_human_review\n    IncidentStore(workspace / "incidents.sqlite").save(report)\n\nasyncio.run(main())'),
-        p("from_file validates local configuration only. handle_incident prepares enabled sources at incident end, binds references, scopes context, runs triage, and returns a report. Pass observations=tuple_of_Evidence to override replay, or observations=() to force missing evidence. No paid model is called without use_agent=True or an explicitly injected investigator."),
-        p("In a notebook use top-level await, not asyncio.run inside the active event loop. Optional investigator, guard, runner, and HTTP client injection are trusted caller-owned extension ports—not permissions a model can reconfigure. The caller owns and closes an injected client."),
+      {id: "hypotheses", title: "What makes an explanation testable", blocks: [
+        table(["Field", "Purpose"], [
+          ["`id`, `statement`", "A stable identity and a falsifiable explanation."],
+          ["`causal_path`", "Entities in the incident graph, starting where the fault originates."],
+          ["`evidence_needed`", "Registered query IDs whose facts cover the predictions and falsifiers."],
+          ["`predictions`", "Facts expected if the explanation holds."],
+          ["`falsifiers`", "Facts that would contradict it."],
+        ]),
       ]},
-      {id: "prepared", title: "Prepare a snapshot deliberately", blocks: [
-        code("python", 'prepared = await project.prepare(at=incident.ended_at)\nprint(prepared.discovery.complete)\nprint([(s.name, s.status) for s in prepared.discovery.sources])\nprint(prepared.graph.upstream_of(incident.affected_entities[0]))\nreport = await prepared.handle_incident(incident)'),
-        p("Reuse PreparedProject only when you intend the same topology snapshot; call prepare again for fresh discovery. DiscoveryError.report retains sanitized per-source acquisition statuses. Unresolved discovered references fail before investigation. No global graph cache or historical Kubernetes reconstruction is implied."),
+      {id: "assessment", title: "Assessment", blocks: [
+        p("A hypothesis is `supported` only if every prediction is supported by a usable fact and no falsifier holds. Contradiction takes precedence. Missing, conflicting or degraded facts leave it `unresolved`."),
+        table(["State", "Meaning"], [
+          ["`supported`", "The facts agree with it. This is evidence support, not causal proof."],
+          ["`contradicted`", "A prediction fails, or a falsifier holds."],
+          ["`unresolved`", "The facts are missing, degraded, conflicting or not enough to decide."],
+        ]),
       ]},
-      {id: "commands", title: "CLI reference", blocks: [
-        table(["Command", "Effect"], [["init --directory PATH", "Create fresh offline project, incident, and observations files."], ["doctor --project FILE", "Local validation/readiness warnings; no live network or paid request."], ["discover --project FILE --report", "Declared/discovered graph plus source statuses; incomplete discovery is nonzero."], ["graph --project FILE --entity ID --hops N", "Bounded neighborhood; json, dot, svg, or terminal format."], ["incident --project FILE --incident FILE", "Primary triage/investigator/report workflow."], ["incident ... --use-agent", "Explicit paid-model permission after inconclusive triage."], ["incident ... --observations FILE --store FILE", "Replay facts and explicitly save an immutable-ID incident report."], ["console --project FILE", "Interactive doctor, source, graph, and incident menu."], ["record-resolution --store FILE --resolution FILE --confirm", "Explicit human attestation for an existing stored incident."], ["investigate ... --use-model", "Lower-level candidate/evaluation baseline with one optional model completion."]]),
-        p("Graph SVG/terminal exports are bounded views; JSON/DOT retain the multigraph. The image renderer needs no Graphviz. Machine-readable commands stay undecorated, and no command applies a patch, restarts a service, or promotes a rule."),
+      {id: "conclusion", title: "How a report reaches its conclusion", blocks: [
+        diagram(`flowchart TD
+    C["Candidate hypotheses<br/>(checks and investigator)"] --> V{"Valid?<br/>graph IDs, registered queries,<br/>known receipts"}
+    V -->|no| U["Dropped; reason listed in<br/>unresolved_questions"]
+    V -->|yes| M["Mechanical assessment<br/>against collected facts"]
+    M --> S["supported"]
+    M --> X["contradicted"]
+    M --> R["unresolved"]
+    S --> O{"Supported candidates agree<br/>on one root cause?"}
+    O -->|yes| SD["supported_diagnosis"]
+    O -->|no| IE["insufficient_evidence<br/>competing roots listed"]
+    X --> N["no diagnosis from this candidate"]
+    R --> N`),
+        p("A diagnosis requires the supported explanations to agree on one root cause. A Kubernetes resource that hosts a service counts as that service. If two supported explanations name different roots, the conclusion is `insufficient_evidence` and both are listed: Lumis does not invent a ranking. With no usable evidence, the conclusion is `insufficient_evidence` or `requires_human_expert`."),
       ]},
-      {id: "storage", title: "Immutable audit and manual resolutions", blocks: [
-        p("IncidentStore.save(report) commits incident, evidence, and receipt rows atomically. Duplicate incident IDs fail; a fresh run needs a fresh ID. HumanResolution is append-only and separate from diagnosis. Protect files through appropriate access, retention, and backup controls; SQLite storage is not a multi-tenant hosted service."),
-        code("json", '{\n  "id": "review-001",\n  "incident_id": "demo-001",\n  "reviewer": "operator",\n  "recorded_at": "2026-10-04T12:00:00Z",\n  "summary": "Reviewed the report and tested the change externally.",\n  "applied_change": "Manual operator change; not executed by Lumis.",\n  "outcome": "inconclusive",\n  "evidence_references": []\n}'),
-        p("Replace example IDs with an actually stored incident. Record only what the operator observed. This does not turn supported into confirmed, and does not create automatically retrievable or learned rules."),
+      {id: "fields", title: "What the report contains", blocks: [
+        table(["Field", "Content"], [
+          ["`context`", "The incident, scoped graph, queries and evidence."],
+          ["`findings`", "Each check's finding with its assessment."],
+          ["`assessments`", "Each candidate hypothesis and its state."],
+          ["`receipts`", "Redacted records of every query and tool call."],
+          ["`suggestions`", "Tentative, text-only next steps for a person."],
+          ["`unresolved_questions`", "What the evidence could not settle, and why candidates were dropped."],
+          ["`route`", "`deterministic`, `agent` or `human`."],
+          ["`conclusion`", "`supported_diagnosis`, `insufficient_evidence` or `requires_human_expert`."],
+          ["`stop_reason`", "Why the investigation ended."],
+          ["`metrics`", "Model requests, tokens, tool attempts, evidence queries and probes."],
+          ["`truth_state`, `requires_human_review`", "Always `unconfirmed_hypothesis` and `true`."],
+        ]),
+        p("The report does not store the model's raw reasoning or the full provider conversation. Callers that need it for evaluation can read `PydanticInvestigator.messages` in memory."),
       ]},
-      {id: "extensions", title: "Lower-level extensions and comparison baseline", blocks: [
-        table(["Interface", "Boundary"], [["Investigator", "Caller-provided uncertain investigation; output is still validated by the handler."], ["EvidenceConnector", "async collect(query, incident) → tuple[Evidence, ...]; approved bounded read-only observation."], ["HypothesisSource", "async propose(context) → tuple[Hypothesis, ...]; shared validation and assessment."], ["RuleSource / MemoryHypothesisSource", "Declared or caller-retrieved candidates, not automatic memory retrieval/learning."], ["HypothesisModel / ModelHypothesisSource", "Single-completion candidate generation, no tool-agent or action authority."], ["ProbeRunner / TriageGuard", "Trusted application implementations requiring their own safety review."]]),
-        p("YamlProject.investigate returns the baseline Investigation with assessments, trace, outcome (supported / abstained / hypotheses_ready), stop reason, and unconfirmed_hypothesis truth state. Use it for comparisons, not as a synonym for handle_incident. The baseline InvestigationStore and IncidentStore records are distinct; there is no automatic old-schema migration."), source("python-api.md"), source("cli.md"),
+      {id: "store", title: "Audit records and human resolutions", blocks: [
+        p("`IncidentStore.save(report)` writes the report, evidence and receipts to SQLite in one transaction. Saving the same incident ID twice is refused. After a person has dealt with the incident, they can append a separate resolution record:"),
+        code("json", '{\n  "id": "review-001",\n  "incident_id": "api-001",\n  "reviewer": "operator",\n  "recorded_at": "2026-10-05T12:00:00Z",\n  "summary": "Restarted the API after the report; health checks recovered.",\n  "applied_change": "Manual restart by the on-call engineer; not executed by Lumis.",\n  "outcome": "resolved",\n  "evidence_references": []\n}'),
+        code("bash", "lumis record-resolution --store incidents.sqlite --resolution resolution.json --confirm"),
+        p("Outcomes are `resolved`, `not_resolved` or `inconclusive`. A resolution never changes the diagnosis, executes anything or creates a new rule."),
+        source("incident-investigation.md", "Incident investigation"),
+      ]},
+    ],
+  },
+
+  // ------------------------------------------------------------------ Build
+  {
+    slug: "configuration", group: "Build", label: "YAML configuration", title: "YAML configuration",
+    description: "Reference for the lumis.dev/operational-v1alpha1 project file: top-level fields, budgets, the incident and observation formats, and validation rules.",
+    sections: [
+      {id: "contract", title: "A strict project file", blocks: [
+        p("The project format is `lumis.dev/operational-v1alpha1`. Unknown fields, duplicate keys, YAML aliases, excessive nesting and files over 1 MiB are rejected. Run `lumis doctor --project lumis.yaml` after every edit; it validates locally and makes no network calls."),
+      ]},
+      {id: "fields", title: "Top-level fields", blocks: [
+        table(["Field", "Purpose"], [
+          ["`api_version`", "Always `lumis.dev/operational-v1alpha1`."],
+          ["`project`", "`name` and `environment`."],
+          ["`sources`", "Read-only connectors. Each is disabled unless `enabled: true`."],
+          ["`identity.aliases`", "Map discovered IDs to canonical IDs."],
+          ["`discovery`", "Limits for building the graph."],
+          ["`graph`", "Declared entities and relationships."],
+          ["`queries`", "The registered query catalog."],
+          ["`initial_query_ids`", "Queries collected before triage."],
+          ["`checks`", "Known failure patterns for triage."],
+          ["`models`", "Optional model provider and ID."],
+          ["`investigator`", "Optional investigator budgets, repositories and sandbox."],
+          ["`budget`", "Investigation limits: hops, entities, queries, hypotheses, context and time."],
+          ["`policies`", "`default_action_mode: read_only`, the only accepted mode."],
+          ["`observations_file`", "Facts to replay for `snapshot` queries."],
+        ]),
+        p("`rule_hypotheses` also exists for the lower-level candidate-only baseline (`lumis investigate`); it does not take part in incident triage."),
+      ]},
+      {id: "example", title: "A complete example", blocks: [
+        p("The small-project file is a complete, valid project. Add `models` and `investigator` to enable the investigator."),
+        code("yaml", SMALL_PROJECT_YAML),
+      ]},
+      {id: "budgets", title: "Budgets", blocks: [
+        code("yaml", "discovery:\n  timeout_seconds: 30\n  max_entities: 5000\n  max_relationships: 10000\n  max_service_graph_series: 1000\n  max_response_bytes: 2000000\nbudget:\n  graph_hops: 3\n  max_entities: 100\n  max_queries: 8\n  max_hypotheses: 5\n  max_model_output_tokens: 3000\n  max_context_characters: 20000\n  query_timeout_seconds: 10\n  source_timeout_seconds: 30\n  total_timeout_seconds: 120"),
+        p("Example values, not recommendations. When a limit would be exceeded, Lumis refuses rather than silently truncating. Preparation and investigation have separate deadlines."),
+      ]},
+      {id: "files", title: "Incident and observation files", blocks: [
+        code("json", '{\n  "id": "checkout-001",\n  "affected_entities": ["service:shop:checkout"],\n  "symptoms": ["Checkout p95 latency above 2s"],\n  "started_at": "2026-10-05T10:00:00Z",\n  "ended_at": "2026-10-05T10:20:00Z"\n}'),
+        code("json", '[\n  {\n    "id": "obs-1",\n    "query_id": "checkout-up",\n    "entity_id": "service:shop:checkout",\n    "key": "up",\n    "value": 0,\n    "observed_at": "2026-10-05T10:20:00Z",\n    "source": "replay",\n    "retrieval_method": "snapshot-replay"\n  }\n]'),
+        p("Timestamps must include a timezone. Each observation must match a registered query's entity and key and fall inside the incident window."),
+        source("configuration.md", "YAML reference"),
       ]},
     ],
   },
   {
-    slug: "safety", group: "Understand", label: "Safety & evaluation", title: "Bound access, preserve uncertainty, qualify the result",
-    description: "Review model opt-in, source allowlists, redaction, isolated diagnostic sandbox limits, abstention, audit receipts, and independent evaluation of Lumis SDK investigations.",
+    slug: "connectors", group: "Build", label: "Connectors", title: "Connectors",
+    description: "Configure the read-only sources: Kubernetes, Prometheus, Loki, Tempo, Prefect, PostgreSQL, recent changes from Git and rollouts, and snapshots.",
     sections: [
-      {id: "models", title: "Optional models do not own the decision", blocks: [
-        p("The recommended investigator is one Pydantic AI agent with explicit provider/model credentials. OpenRouter is the default configured provider; native OpenAI, Anthropic, and Gemini are available. The core works without a model. No default model ID, configuration-time paid request, or cross-provider fallback occurs."),
-        p("The baseline generate interface returns structured candidates in one completion. The reference agent instead uses a bounded tool loop. Both paths validate graph/query references and candidate contracts locally; model confidence is never authority. Qualify real tool/schema support, costs, privacy, and quality separately."),
-        p("OpenAI response storage is disabled by the implementation, but that does not override provider retention policy. Provider conversations are not written to IncidentReport. Review any caller-retained messages and artifacts. Heuristic redaction is not a guarantee arbitrary data is safe to export."),
+      {id: "overview", title: "Sources at a glance", blocks: [
+        p("Instrument your application with standard telemetry. Lumis is configured outside it, reads through these connectors, and never imports your code. All connectors are read-only and bounded by item, byte and time limits, with no hidden retries or pagination."),
+        table(["Source", "Gives Lumis"], [
+          ["Kubernetes", "Services, deployments, pods and ReplicaSets in one context and namespace; links resources to logical services."],
+          ["Prometheus", "Instant scalar observations; optional service-graph topology from an existing metric."],
+          ["Loki", "Log entries or counts in the incident window, with up to five allowlisted structured-metadata fields."],
+          ["Tempo", "Scoped TraceQL searches, span reads and observed topology."],
+          ["Prefect", "Allowlisted flow and task runs; optional workflow topology."],
+          ["SQL", "One read-only scalar from PostgreSQL (`sql` extra)."],
+          ["Changes", "Recent Git commits on mapped paths and Kubernetes rollouts."],
+          ["Snapshots and OTLP exports", "Normalized topology, observations and local OpenTelemetry trace exports, for offline replay."],
+        ]),
+        p("Install `lumis-sdk[http]` for the HTTP connectors. All of these were exercised live on the [GridCast estate](/docs/evaluation); qualify scope, identities, permissions and query meaning on your own."),
       ]},
-      {id: "code-access", title: "Allowlisted code and fixed Git reads", blocks: [
-        p("Operators approve repository roots, mapped entities, and exact text files. Snapshots are captured once per repository per investigation, redacted, and hashed. Traversal, symlinks, special/binary/oversized files, unapproved extensions, and secret/dot directories are refused. Consumer modules are never imported."),
-        p("Git commands are local and read-only; diffs disable external diff/textconv and hooks. Commit subjects are excluded from basic log inspection unless include_commit_subjects is explicitly true, then redacted/truncated and still untrusted. Typed recent-change records use separate configured path/entity mappings. Neither interface grants an unrestricted shell."),
+      {id: "kubernetes", title: "Kubernetes", blocks: [
+        code("yaml", "sources:\n  kubernetes:\n    enabled: true\n    context: my-approved-context\n    namespace: my-estate"),
+        p("Uses `kubectl` with your read access. No all-namespace scan, no secret or environment extraction, no kubeconfig edits and no workload changes. If the source fails, preparation stops."),
       ]},
-      {id: "sandbox", title: "Diagnostic experiments are not production actions", blocks: [
-        p("The probe runner uses an explicitly enabled ephemeral Docker container, an approved digest-pinned preloaded Python image, no host mounts, no network, no forwarded environment, read-only root, unprivileged user, dropped capabilities, and no-new-privileges. A small tmpfs and CPU/memory/PID/time/input/output limits bound work. Approved files are copied through stdin; there is no host-execution fallback or package download."),
-        note("Use a reviewed dedicated environment", "Containers share a host kernel and are not VM-grade isolation for hostile code. Use a dedicated/rootless development daemon or a reviewed stronger runner, not a production daemon with sensitive workloads. Tests demonstrate constraints, not a security audit.", "amber"),
-        p("Register a provider: probe query tied to a candidate and entity/key before use. Generated Python must emit exactly one JSON object containing a finite scalar value. Receipts retain purpose, status, redacted output, code digest, and copied-source digest. Exact experiment source should be retained separately when reproducibility requires it."),
-        p("Probe evidence is degraded: it cannot prove production behavior, causal diagnosis, or successful recovery. Its incident-end timestamp is a replay coordinate, not a historical observation. Missing daemon/image, denial, invalid output, timeout, or exhausted budget supplies no trusted measurement. Cancellation triggers bounded cleanup; inspect the dedicated daemon after failures."), source("sandbox.md"),
+      {id: "prometheus", title: "Prometheus", blocks: [
+        code("yaml", "sources:\n  prometheus:\n    enabled: true\n    endpoint: http://localhost:9090\nqueries:\n  - id: service-up\n    provider: prometheus\n    entity_id: service:demo\n    key: up\n    description: Availability at the end of the incident\n    parameters:\n      promql: 'min(up{job=\"demo\"})'"),
+        p("The query runs at the end of the incident and must return one finite scalar or one vector series; aggregate explicitly. An outage, malformed response or empty result supplies no fact. To add call topology from an existing service-graph metric, set `discover_service_graph: true` with an explicit `service_namespace`."),
       ]},
-      {id: "evaluation", title: "What to measure in an independent experiment", blocks: [
-        list("Pin the SDK commit, Python/dependency versions, project schema, approved container digest, incident window, and input hashes.", "Use independent topology/telemetry provenance. Keep fault labels and expected answers outside agent context.", "Compare deterministic-only and explicitly agent-enabled runs, including known, ambiguous, healthy, missing, conflicting, and degraded evidence.", "Retain candidate support/contradictions, unresolved questions, query/tool receipts, stop reasons, token/request/probe usage, and human outcomes.", "Qualify real backend access, identity mapping, provider schema/tool support, privacy, and representative workload separately from contract tests.", "Apply and verify any fix manually outside the SDK; an experiment receipt is not recovery verification."),
-        p("Scripted Pydantic AI models and mocked HTTP transports verify protocol, budgets, and failure behavior—not live diagnosis accuracy. Synthetic notebooks are reproducible contract demonstrations. Developmental GridCast fault-injection runs informed changes to the SDK, including change records, SQL observations, and conflicting-root handling; those lessons are not a generalized production-readiness certificate."),
-        p(`[GridCast integration lessons](${SOURCE_DOCS}/design-notes/gridcast-integration-lessons.md) record the versioned experiments and resulting design changes. Reproduce and qualify your own workload rather than extrapolating a headline accuracy claim.`),
+      {id: "loki-tempo-prefect", title: "Loki, Tempo and Prefect", blocks: [
+        code("yaml", "sources:\n  loki:\n    enabled: true\n    endpoint: https://approved-log-gateway.example\n    headers_env:\n      Authorization: LUMIS_LOKI_AUTHORIZATION\n      X-Scope-OrgID: LUMIS_LOKI_TENANT\n    max_results: 50\n  tempo:\n    enabled: true\n    endpoint: http://localhost:3200\n    max_results: 50\n  prefect:\n    enabled: true\n    endpoint: http://localhost:4200/api\n    flow_names: [daily-forecast]\n    max_results: 50"),
+        table(["Provider", "Parameters and outputs"], [
+          ["`loki`", "`logql` with an exact stream label matcher; output `entries` or `count`; optional `fields` (up to five structured-metadata fields)."],
+          ["`tempo`", "`traceql` with exact resource scope; output `entries`, `duration_ms` or `spans`; or `trace_id` for explicit spans."],
+          ["`prefect`", "Allowlisted `flow_name`; `flow_runs` or `task_runs`; output `entries`, `failed_count` or `max_duration_ms`."],
+        ]),
+        p("Point Loki and Tempo at query frontends, and Prefect at its API base (including `/api`). Credentials in URLs are refused; header values come from environment variables and fail closed when missing. Log counts are not failure rates, and capped results are marked degraded."),
       ]},
-      {id: "verification", title: "SDK verification is distinct from consumer qualification", blocks: [
-        code("bash", "uv sync --locked --all-groups\nuv run ruff format --check .\nuv run ruff check .\nuv run mypy src\nuv run python scripts/generate_config_schema.py --check\nuv run pytest\nuv run bandit --recursive --severity-level medium --confidence-level medium src\nuv audit --locked\nuv build"),
-        p("Run checks against your pinned SDK checkout. Real Docker and live-backend tests are explicitly opt-in and need separate approved setup. Do not count skips as live verification, or report contract coverage as model-quality evaluation."), source("verification.md"),
+      {id: "sql", title: "Read-only SQL", blocks: [
+        code("yaml", "sources:\n  sql:\n    enabled: true\n    dsn_env: ESTATE_READONLY_DSN\n    statement_timeout_ms: 5000\n    connect_timeout_seconds: 5\nqueries:\n  - id: incident-events\n    provider: sql\n    entity_id: service:demo\n    key: event_count\n    description: Registered event count during the incident\n    parameters:\n      sql: >-\n        SELECT count(*) FROM operational_events\n        WHERE at >= %(started_at)s AND at <= %(ended_at)s"),
+        p("Each query is one `SELECT` or `WITH` statement returning exactly one row and column. Only `started_at` and `ended_at` parameters are accepted. Transactions are read-only and rolled back, but that is not a permission boundary: use a database role that can only read the approved tables. `NULL` supplies no fact."),
+      ]},
+      {id: "changes", title: "Recent changes", blocks: [
+        p("Many incidents follow a change. `sources.changes` attributes recent Git commits and Kubernetes rollouts to graph entities, so a check or the investigator can ask “what changed here, and when?”. A change is evidence about an entity, never proof that it caused the incident."),
+        code("yaml", "sources:\n  changes:\n    enabled: true\n    lookback_seconds: 3600\n    max_records: 50\n    git:\n      - id: gitops\n        root: ../gitops\n        paths:\n          services/demo/: [\"service:demo\"]\nqueries:\n  - id: demo-changes\n    provider: changes\n    entity_id: service:demo\n    key: release_changes_30m\n    description: Recent mapped changes before incident end\n    parameters: {output: count, lookback_seconds: \"1800\"}"),
+        p("`count` returns the number of mapped changes in the lookback; `seconds_since_latest` returns the age of the newest one. Set `kubernetes_rollouts: true` (with the Kubernetes source enabled) to include rollouts, including re-activations seen through `ScalingReplicaSet` events. Git is the durable record; Kubernetes event history expires."),
+        source("telemetry-connectors.md", "Connector reference"),
       ]},
     ],
   },
   {
-    slug: "project", group: "Project", label: "Status, migration & contribution", title: "Project status, migration, and contribution",
-    description: "Understand the experimental Lumis SDK reset, legacy branches, current release boundary, open-source contribution workflow, foundational research, and planned Lumis platform.",
+    slug: "api", group: "Build", label: "Python API and CLI", title: "Python API and CLI",
+    description: "Use YamlProject.handle_incident from Python, prepare graph snapshots deliberately, store reports, and the full CLI reference.",
     sections: [
-      {id: "status", title: "The public foundation, not the whole platform", blocks: [
-        p("Lumis SDK is an Apache-2.0, independent Python framework for evidence-grounded operational intelligence. The current public PoC implements incident context, scoped graphs, conservative checks, a basic optional investigator, diagnostic experiments, and reviewable records. No hosted account or consumer application is needed for the offline foundation."),
-        note("Lumis platform · coming soon", "Managed team workflows, advanced reasoning policies, domain products, broader operational memory, reviewed rule promotion, and policy-controlled actions are development/research directions. They are not production-ready features of this SDK.", "amber"),
-        p("Data and AI systems are the current product focus; cloud, edge, industrial, and energy systems are broader directions. The contracts can describe external systems without claiming shipped industrial/energy integrations. No customer adoption, calibrated accuracy, production autonomy, or completed GridCast evaluation is implied."),
+      {id: "python", title: "The Python API", blocks: [
+        code("python", 'import asyncio\nfrom pathlib import Path\nfrom lumis_sdk.core import Incident\nfrom lumis_sdk.runtime import IncidentStore, YamlProject\n\nasync def main():\n    workspace = Path("./my-lumis")\n    incident = Incident.model_validate_json((workspace / "incident.json").read_text())\n    project = YamlProject.from_file(workspace / "lumis.yaml")\n    report = await project.handle_incident(incident)\n    print(report.conclusion, report.route)\n    assert report.requires_human_review\n    IncidentStore(workspace / "incidents.sqlite").save(report)\n\nasyncio.run(main())'),
+        p("`from_file` validates the project locally. `handle_incident` prepares the graph at the incident's end time, runs triage and, if enabled, the investigator, and returns an `IncidentReport`. Pass `observations=` to replay facts, or `observations=()` to force missing evidence. No model is called unless you pass `use_agent=True` or inject an investigator."),
       ]},
-      {id: "migration", title: "A breaking operational-intelligence reset", blocks: [
-        p("The SDK deliberately replaces the previous domain/application/ports/adapters framework. Old diagnose, resolve, rules, plugins, memory, config-migrate commands, lifecycle/action schemas, legacy plugins, and embedded cookbooks are removed from the active architecture. There is no compatibility shim suggesting those imports still work."),
-        list("Pin an old consumer while creating a separate migration/integration branch.", "Start a fresh lumis.yaml with init. Do not mechanically rename legacy YAML.", "Map incidents, identities, topology, and registered observations to current contracts.", "Re-express diagnostic rules as predictions and falsifiers; put incident triage signatures in checks.", "Use handle_incident / lumis incident for the primary PoC; keep investigate as a comparison baseline.", "Use a fresh store and retain legacy report/memory records under their original schema.", "Validate representative, withheld, conflicting, and missing-evidence cases before changing the consumer pin."),
-        p(`[Original SDK history](${GITHUB_REPO}/tree/legacy/pre-operational-intelligence-2026-10-02) and [intermediate reset](${GITHUB_REPO}/tree/legacy/additive-reset-2026-10-03) remain available in separate checkouts. Historical branches are not actively supported parallel APIs. The old website is preserved on [its own legacy branch](https://github.com/soloshun/lumis-sdk-site/tree/legacy/pre-operational-intelligence-2026-10-04).`),
+      {id: "prepared", title: "Reusing a prepared graph", blocks: [
+        code("python", "prepared = await project.prepare(at=incident.ended_at)\nprint(prepared.discovery.complete)\nprint([(s.name, s.status) for s in prepared.discovery.sources])\nreport = await prepared.handle_incident(incident)"),
+        p("Reuse a `PreparedProject` only when you want the same topology snapshot; call `prepare` again for fresh discovery. A failed source raises `DiscoveryError`, whose `report` lists each source's status."),
       ]},
-      {id: "contribute", title: "Contribute against the development interface", blocks: [
-        p("SDK changes branch from dev and return through reviewed PRs with DCO sign-off. Update source, schemas, documentation, tests, changelog, and roadmap together. Generally useful connectors and contracts should preserve independent application boundaries and include synthetic offline reproductions."),
-        list("Use bounded read-only connectors with explicit query ownership and least-privilege access.", "Exercise source failure, identity conflicts, missing/degraded facts, time/byte/query limits, and cancellation.", "Keep optional HTTP/agent imports out of core/offline paths.", "Do not substitute model guesses for unavailable evidence or claim tests demonstrate live accuracy.", "Keep application scenarios, deployments, injected faults, and cookbooks in the external cookbook project."),
-        p(`[Contributing guide](${GITHUB_REPO}/blob/dev/CONTRIBUTING.md) · [roadmap](${GITHUB_REPO}/blob/dev/ROADMAP.md) · [release runbook](${SOURCE_DOCS}/releasing.md). Promotion from SDK dev to main and package publication are separate reviewed steps. A metadata version or merged PR alone does not establish publication.`),
+      {id: "cli", title: "CLI reference", blocks: [
+        table(["Command", "Effect"], [
+          ["`lumis init --directory PATH`", "Create an offline starter project, incident and observations."],
+          ["`lumis doctor --project FILE`", "Validate locally. No network or paid requests."],
+          ["`lumis discover --project FILE [--report]`", "Build the graph from all enabled sources; `--report` shows per-source status."],
+          ["`lumis graph --project FILE [--entity ID --hops N] --format json|dot|svg|terminal [--output FILE]`", "Export or view the graph or a neighbourhood."],
+          ["`lumis incident --project FILE --incident FILE`", "Triage, optional investigator, report. Add `--observations`, `--store`, `--use-agent`."],
+          ["`lumis record-resolution --store FILE --resolution FILE --confirm`", "Append a human resolution to a stored incident."],
+          ["`lumis console --project FILE`", "Interactive menu over the same commands."],
+          ["`lumis investigate --project FILE --incident FILE`", "Lower-level candidate-only baseline, used for comparisons."],
+        ]),
+        p("No command restarts a service, applies a patch or changes a rule. Error messages are deliberately sanitized so they do not leak credentials or payloads."),
       ]},
-      {id: "research", title: "Foundational research and the current boundary", blocks: [
-        p(`[Agentic Self-Healing for Data & AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software](${PAPER_URL}) is the foundational arXiv preprint (2608.01955). A [local PDF](${PAPER_PDF}) remains available for reading.`),
-        p("The paper's broader guarded-recovery and verified-learning architecture informs the research direction. The current SDK is an investigation-focused PoC, not an implementation of every layer in that earlier architecture. Automatic remediation, learned-rule promotion, advanced orchestration, and a full autonomous lifecycle are not shipped."),
-        p("The working principle is models propose; Lumis tests. Evidence support is narrower than formal proof or confirmed cause. Further research should evaluate competing explanations, evidence acquisition cost, abstention, and the quality of human-reviewed outcomes."), source("migration.md"), source("review-guide.md"),
+      {id: "extend", title: "Extension points", blocks: [
+        table(["Interface", "Use"], [
+          ["`Investigator`", "Replace the reference investigator. Its output is still validated by Lumis."],
+          ["`EvidenceConnector`", "Add a read-only source: `async collect(query, incident)` returns observations."],
+          ["`TriageGuard`", "Add your own extra rule for when triage may conclude."],
+          ["`ProbeRunner`", "Provide a different, reviewed sandbox for experiments."],
+        ]),
+        source("python-api.md", "Python API"),
+      ]},
+    ],
+  },
+  {
+    slug: "models", group: "Build", label: "Model providers", title: "Model providers",
+    description: "Configure OpenRouter, OpenAI, Anthropic or Gemini for the optional investigator, choose a model, and understand what has and has not been tested.",
+    sections: [
+      {id: "providers", title: "Providers", blocks: [
+        table(["Provider", "Default key variable", "Interface"], [
+          ["`openrouter` (default)", "`OPENROUTER_API_KEY`", "Chat Completions with structured output"],
+          ["`openai`", "`OPENAI_API_KEY`", "Responses API"],
+          ["`anthropic`", "`ANTHROPIC_API_KEY`", "Messages API"],
+          ["`gemini`", "`GEMINI_API_KEY`", "generateContent"],
+        ]),
+        code("yaml", "models:\n  provider: anthropic\n  model: your-anthropic-model-id\n  # api_key_env: MY_CUSTOM_KEY   # optional override\n  # reasoning: high              # minimal | low | medium | high"),
+        p("There is no default model ID, no cross-provider fallback and no automatic retry. OpenRouter IDs use the `upstream-provider/model` form, and OpenRouter routing fallback is disabled."),
+      ]},
+      {id: "choose", title: "Choosing a model", blocks: [
+        list(
+          "It must support tool calling and structured output through the chosen provider interface.",
+          "Reasoning models work well but think for a long time; budget for minutes, not seconds.",
+          "Start with a small `request_limit` and raise it once you have seen typical runs.",
+        ),
+        note("What has been tested", "Live evaluation so far used one model: DeepSeek v4 pro through OpenRouter, on GridCast. The OpenAI, Anthropic and Gemini adapters pass contract tests with mocked transports, but their quality on real incidents has not been measured. Do not assume results carry over.", "amber"),
+      ]},
+      {id: "privacy", title: "Privacy", blocks: [
+        p("The investigator sends the scoped incident context, query results and approved file contents to your provider. Lumis redacts common secrets and personal data patterns, but redaction is heuristic: review what your allowlist exposes. OpenAI response storage is disabled; each provider's own retention policy still applies. The provider conversation is not written to the report."),
+        source("models.md", "Model providers"),
+      ]},
+    ],
+  },
+  {
+    slug: "safety", group: "Build", label: "Safety and limits", title: "Safety and limits",
+    description: "What Lumis is allowed to touch, how code access and redaction work, the opt-in diagnostic sandbox, and how to verify the SDK yourself.",
+    sections: [
+      {id: "boundaries", title: "Boundaries", blocks: [
+        list(
+          "**Read-only.** `read_only` is the only accepted action mode. There is no executor.",
+          "**Operator-owned access.** Sources, queries, files and budgets are declared in YAML; the model cannot change them.",
+          "**Opt-in model.** No model is called unless you enable the investigator for a run.",
+          "**Bounded work.** Graph, query, request, tool, token, probe and time limits apply to every run.",
+          "**Visible uncertainty.** Missing or degraded evidence stays unresolved; competing causes are not resolved by guesswork.",
+        ),
+      ]},
+      {id: "code", title: "Code and Git access", blocks: [
+        p("Operators approve repository roots, the entities they belong to, and exact files. Traversal, symlinks, special, binary or oversized files, unapproved extensions and secret or dot directories are refused, and your application's modules are never imported. Git access is a fixed set of local read-only commands with external diff tools and hooks disabled. Commit subjects are excluded unless `include_commit_subjects: true`."),
+        note("Keep your own labels out of readable code", "In our evaluation, a docstring in an allowlisted file named the fault it described, and the model read it. Review allowlisted files and Git history for anything that gives away an answer you want the investigator to find on its own.", "amber"),
+      ]},
+      {id: "sandbox", title: "The diagnostic sandbox (opt-in)", blocks: [
+        p("`probe` runs model-generated Python in an ephemeral Docker container: a digest-pinned image, no network, no host mounts, no forwarded environment, a read-only root, an unprivileged user, dropped capabilities and CPU, memory, process and time limits. Approved files are copied in; nothing is downloaded. It is disabled unless `investigator.sandbox.enabled: true`."),
+        p("Probe results are always degraded evidence: they cannot prove production behaviour or satisfy a terminal check. Containers share the host kernel, so use a dedicated, rootless development daemon, never a production one."),
+      ]},
+      {id: "redaction", title: "Redaction", blocks: [
+        p("Context sent to a model and stored receipts are redacted for common credentials and personal data patterns, without masking ordinary telemetry such as decimals, timestamps or IP addresses. It is a safety net, not a guarantee."),
+      ]},
+      {id: "verify", title: "Verify the SDK yourself", blocks: [
+        code("bash", "git clone https://github.com/soloshun/lumis-sdk.git && cd lumis-sdk\nuv sync --locked --all-groups\nuv run ruff check . && uv run mypy src\nuv run pytest\nuv run bandit --recursive --severity-level medium --confidence-level medium src\nuv audit --locked"),
+        p("The test suite uses scripted models and mocked transports. It verifies contracts, budgets and failure behaviour, not diagnosis quality on live systems."),
+        source("sandbox.md", "Sandbox threat model"),
+      ]},
+    ],
+  },
+
+  // ------------------------------------------------------------------ Project
+  {
+    slug: "evaluation", group: "Project", label: "Evaluation: GridCast", title: "Evaluation on the GridCast estate",
+    description: "What we measured when we ran Lumis against fifteen injected failures on a live reference estate, how it compares with simpler approaches, and what went wrong.",
+    sections: [
+      {id: "setup", title: "The estate and the protocol", blocks: [
+        p(`GridCast is an open reference estate we built for this purpose: a synthetic electricity-demand forecaster with ten services on Kubernetes (kind), Prometheus, Loki, Tempo, Prefect and PostgreSQL, external weather and telemetry vendors, and changes made through GitOps. We injected fifteen different failures through ordinary channels (releases, configuration, rotated secrets, resource limits, a model promotion, vendor outages and silent data problems). Five of them were added later, specifically to be hard. Everything is public in the [GridCast cookbook](${COOKBOOKS}).`),
+        p("For each failure the estate's own alerts opened one incident, which was then frozen: every system answered the same incident with the same evidence window. The ground truth was read only after all reports existed. A run counts as correct only if its top answer names the right component and the right mechanism."),
+      ]},
+      {id: "systems", title: "What was compared", blocks: [
+        table(["System", "What it gets"], [
+          ["Rules only", "Lumis' deterministic checks, no model."],
+          ["Model, alert only", "The alert, the affected services and the time window. Like pasting an alert into a chat assistant."],
+          ["Model + graph", "The same, plus the service graph."],
+          ["One model call with evidence", "The graph plus the facts Lumis collected for its checks, in one completion."],
+          ["Lumis", "Triage, then the investigator, then mechanical assessment."],
+        ]),
+        p("Every model-based system used the same model: DeepSeek v4 pro through OpenRouter, reasoning effort high."),
+      ]},
+      {id: "results", title: "Results", blocks: [
+        table(["", "Rules only", "Model, alert only", "Model + graph", "One call with evidence", "Lumis"], [
+          ["Correct (component and mechanism)", "0.57", "0.04", "0.18", "0.54", "**0.89**"],
+          ["Hard set (silent, partial, decoy faults)", "0 / 20", "0 / 8", "2 / 8", "2 / 8", "**7 / 8**"],
+          ["Model cost per run", "$0", "$0.005", "$0.015", "$0.035", "$0.14"],
+          ["Median time per run", "0.13 s", "—", "—", "224 s", "225 s"],
+        ]),
+        p("Figures exclude one scenario (N) after we found a ground-truth leak; with it, Lumis scored 0.90. Lumis concluded 22 times on the remaining scenarios and was right 21 times. When evidence did not settle a question, it said so instead of guessing. The rules score reflects leads: rules concluded only on the one scenario with a sufficient terminal check, and were right every time."),
+        list(
+          "**Without evidence, the model guesses.** Given only the alert, it named the right cause and mechanism once in 28 runs. It usually found the symptomatic service and invented a plausible mechanism.",
+          "**Evidence does most of the work.** One evidence-fed call reached 0.54. The largest single jump is from no evidence to curated evidence.",
+          "**Reach matters on hard faults.** The facts that decided the hard scenarios (a timeout commit, a CPU-limit commit, a missing zone) were not in any pre-collected bundle. An investigator that can ask for more found them.",
+          "**A capable model with raw tools matched Lumis on the one clean scenario we could compare** (2 / 2 each), but needed about twice the tool calls and model requests, and its answer was unchecked free text.",
+        ),
+      ]},
+      {id: "wrong", title: "What went wrong", blocks: [
+        list(
+          "**Our estate produced false alerts in the first run.** Two processes shared one telemetry identity and corrupted rate calculations. We fixed the estate and re-ran everything.",
+          "**False zeros.** All four wrong conclusions in the first run rested on telemetry that reported a zero that was really missing data (see [evidence](/docs/evidence#unknown)).",
+          "**A ground-truth leak**, found after the runs: a docstring in an allowlisted file named one scenario, and the unguided tool agent could read our own development history. That scenario is excluded, and a test now guards against labels in readable files.",
+          "**Rubric revisions.** The regex rubric that scores mechanisms was revised twice after we inspected outputs; each revision applied to every system.",
+          "**Thirteen SDK defects**, from redaction masking decimals to a routing parameter that broke one provider, were found and fixed during the integration. They are the bulk of what changed before 0.1.0.",
+        ),
+      ]},
+      {id: "limits", title: "Limits", blocks: [
+        note("Read these numbers as a proof of concept", "One synthetic estate whose code and scenarios were written by the same team, one model family, two runs per system per scenario. GPT, Claude, Gemini and Grok models were not tested. Stronger models may raise every rung, including the alert-only baseline.", "amber"),
+        p(`Every number, transcript and correction is in the [research notes](${RESEARCH_NOTES}). The estate, harness and evaluation were built with AI assistance (Claude Opus 5.5); the research design and most scenarios came from the author. Claude was not one of the systems evaluated.`),
+      ]},
+    ],
+  },
+  {
+    slug: "project", group: "Project", label: "Status and contributing", title: "Status, roadmap and contributing",
+    description: "Where Lumis SDK is, what comes next, how to migrate from earlier versions, how to get in touch, and the research it comes from.",
+    sections: [
+      {id: "status", title: "Status", blocks: [
+        p("Lumis SDK 0.1.0 is the first release of the current architecture. It covers the investigation part of a larger research direction: read-only incident context, deterministic triage, one optional investigator, mechanical assessment and audit records. It is experimental: useful for investigation and research today, not a production-hardened or generally validated tool."),
+        table(["Done", "Next"], [
+          ["YAML-led graph and discovery; Kubernetes, Prometheus, Loki, Tempo, Prefect, SQL and change sources", "Evaluation with other model families"],
+          ["Deterministic triage with strict sufficiency rules", "Smaller cookbooks: a single web service, a single data pipeline"],
+          ["One bounded investigator with four provider adapters", "`recent_changes_affecting` semantics and a connector conformance kit"],
+          ["Mechanical assessment, competing-root abstention, audit store", "An independent security, performance and usability review"],
+          ["Live evaluation on GridCast with one model", "Human verification of the evaluation's mechanism labels"],
+        ]),
+        p(`Not planned for the SDK at this stage: automatic remediation, automatic rule learning, or a hosted service. See the [roadmap](${GITHUB_REPO}/blob/main/ROADMAP.md) and [changelog](${GITHUB_REPO}/blob/main/CHANGELOG.md).`),
+      ]},
+      {id: "contact", title: "Get in touch", blocks: [
+        p(`Lumis is early and small. Questions, ideas, bug reports and offers to help are welcome by email: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}). The source is on [GitHub](${GITHUB_REPO}) under Apache-2.0.`),
+      ]},
+      {id: "migration", title: "Migrating from 0.0.x", blocks: [
+        p("0.1.0 replaces the earlier framework entirely. The old `diagnose`, `resolve`, rules, plugins, memory and lifecycle interfaces were removed, with no compatibility layer. To migrate, start a fresh project with `lumis init`, map your incidents, identities, topology and observations to the current contracts, and re-express diagnostic rules as checks with predictions and falsifiers. Use a fresh audit store."),
+        p(`The previous implementation is preserved on the [legacy branch](${GITHUB_REPO}/tree/legacy/pre-operational-intelligence-2026-10-02).`),
+        source("migration.md", "Migration guide"),
+      ]},
+      {id: "research", title: "Research", blocks: [
+        p(`Lumis grew out of [Agentic Self-Healing for Data & AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software](${PAPER_URL}) (arXiv 2608.01955, preprint), also available as a [PDF](${PAPER_PDF}). The paper describes a broader architecture that includes guarded recovery and verified learning. The SDK implements the investigation part only.`),
       ]},
     ],
   },
@@ -304,6 +807,6 @@ export function toMarkdown(page: DocPage) {
       else lines.push(`| ${block.headers.join(" | ")} |`, `| ${block.headers.map(() => "---").join(" | ")} |`, ...block.rows.map(row => `| ${row.join(" | ")} |`), "");
     }
   }
-  lines.push("---", "", `Lumis SDK ${SDK_VERSION} · development documentation · ${GITHUB_REPO}`);
+  lines.push("---", "", `Lumis SDK ${SDK_VERSION} · ${GITHUB_REPO}`);
   return lines.join("\n");
 }

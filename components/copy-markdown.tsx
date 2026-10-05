@@ -17,7 +17,7 @@ export function CopyMarkdown({ markdown }: { markdown: string }) {
       }}
       title="Copy this page as Markdown — paste it into any AI assistant or editor"
     >
-      {copied ? "COPIED ✓" : "COPY AS MARKDOWN"}
+      {copied ? "Copied ✓" : "Copy as Markdown"}
     </button>
   );
 }
