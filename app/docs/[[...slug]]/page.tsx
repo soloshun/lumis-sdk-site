@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { CopyCode } from "@/components/copy-code";
 import { CopyMarkdown } from "@/components/copy-markdown";
 import { DocsGroups } from "@/components/docs-groups";
@@ -10,7 +10,7 @@ import { MobileDocSelect } from "@/components/mobile-doc-select";
 import { DocsNav } from "@/components/site-nav";
 import { SDK_VERSION, docs, getAdjacentDoc, getDoc, groups, toMarkdown, type DocBlock } from "@/content/docs";
 import { highlightCode } from "@/lib/highlight";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, CONTENT_UPDATED, SOCIAL_IMAGE } from "@/lib/site";
 
 export function generateStaticParams() {
   return [{ slug: [] }, ...docs.filter((page) => page.slug !== "overview").map((page) => ({ slug: page.slug.split("/") }))];
@@ -32,28 +32,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
       description: page.description,
       siteName: "Lumis SDK",
       locale: "en_US",
-      images: [],
+      images: [SOCIAL_IMAGE],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: `${page.title} | Lumis SDK Documentation`,
       description: page.description,
-      images: [],
+      images: [SOCIAL_IMAGE],
     },
-    ...(page.slug === "project/research" ? {
-      other: {
-        citation_title: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
-        citation_author: ["Solomon Eshun", "Dennis Murage", "Sharleen Muoki", "Chih-Chun Chen", "Stephen Adjignon", "Matteo Staar", "Oliver Angélil"],
-        citation_publication_date: "2026/08/03",
-        citation_arxiv_id: "2608.01955",
-        citation_pdf_url: absoluteUrl("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf"),
-      },
-    } : {}),
   };
 }
 
 export default async function DocsPage({ params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
+  if (slug?.join("/") === "overview") permanentRedirect("/docs");
   const page = getDoc(slug);
   if (!page) notFound();
   const adjacent = getAdjacentDoc(page.slug);
@@ -76,19 +68,11 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         mainEntityOfPage: pageUrl,
         inLanguage: "en",
         isAccessibleForFree: true,
-        dateModified: "2026-08-23",
+        dateModified: CONTENT_UPDATED,
         author: { "@type": "Person", name: "Solomon Eshun", url: "https://github.com/soloshun" },
         publisher: { "@type": "Organization", name: "Qadim Labs" },
         isPartOf: { "@type": "WebSite", name: "Lumis SDK", url: absoluteUrl("/") },
-        about: ["agentic self-healing", "data pipeline reliability", "guarded incident recovery", page.group],
-        ...(page.slug === "project/research" ? {
-          mainEntity: {
-            "@type": "ScholarlyArticle",
-            name: "Agentic Self-Healing for Data and AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software",
-            url: "https://arxiv.org/abs/2608.01955",
-            datePublished: "2026-08-03",
-          },
-        } : {}),
+        about: ["operational intelligence", "evidence-grounded incident investigation", "bounded investigation", page.group],
       },
       { "@type": "BreadcrumbList", itemListElement: breadcrumbItems },
     ],
@@ -99,48 +83,55 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
       <JsonLd data={docSchema} />
       <DocsNav />
       <aside className="docs-sidebar" aria-label="Documentation navigation">
-        <div className="docs-version"><span>VERSION</span><b>{SDK_VERSION}</b><small>PHASE 1</small></div>
+        <div className="docs-version"><span>lumis-sdk</span><b>{SDK_VERSION}</b><small>Experimental</small></div>
         <DocsGroups
           groups={groups.map(({ group, pages }) => ({ group, pages: pages.map((item) => ({ slug: item.slug, label: item.label, nested: item.nested })) }))}
           activeSlug={page.slug}
           activeGroup={page.group}
         />
         <div className="docs-ai-note">
-          <span>FOR AI ASSISTANTS</span>
+          <span>For AI assistants</span>
           <a href="/llms.txt">llms.txt</a> · <a href="/llms-full.txt">llms-full.txt</a>
         </div>
       </aside>
       <main className="docs-main" id="main">
-        <MobileDocSelect current={page.slug} options={docs.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` }))} />
+        <MobileDocSelect current={page.slug} options={groups.flatMap(({pages}) => pages.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` })))} />
         <article className="docs-article">
           <header>
-            <p className="docs-breadcrumb">DOCS / {page.group.toUpperCase()}</p>
+            <p className="docs-breadcrumb">{page.group}</p>
             <h1>{page.title}</h1>
             <p>{page.description}</p>
             <div className="docs-page-meta">
-              <span>PHASE 1 · PRE-1.0</span><span>PYTHON 3.11+</span>
+              <span>v{SDK_VERSION} · experimental</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
               <CopyMarkdown markdown={toMarkdown(page)} />
-              <a href="https://github.com/soloshun/lumis-sdk" target="_blank" rel="noreferrer">EDIT ON GITHUB ↗</a>
             </div>
           </header>
           {page.sections.map((section) => (
             <section id={section.id} key={section.id}><h2>{section.title}</h2>{section.blocks.map((block, index) => <DocBlockView block={block} key={index} />)}</section>
           ))}
           <nav className="docs-pagination" aria-label="Previous and next pages">
-            {adjacent.previous ? <Link href={adjacent.previous.slug === "overview" ? "/docs" : `/docs/${adjacent.previous.slug}`}><small>PREVIOUS</small><span>← {adjacent.previous.label}</span></Link> : <span />}
-            {adjacent.next ? <Link className="next" href={`/docs/${adjacent.next.slug}`}><small>NEXT</small><span>{adjacent.next.label} →</span></Link> : <span />}
+            {adjacent.previous ? <Link href={adjacent.previous.slug === "overview" ? "/docs" : `/docs/${adjacent.previous.slug}`}><small>Previous</small><span>← {adjacent.previous.label}</span></Link> : <span />}
+            {adjacent.next ? <Link className="next" href={`/docs/${adjacent.next.slug}`}><small>Next</small><span>{adjacent.next.label} →</span></Link> : <span />}
           </nav>
         </article>
       </main>
-      <aside className="docs-toc" aria-label="On this page"><h2>ON THIS PAGE</h2>{page.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</aside>
+      <aside className="docs-toc" aria-label="On this page"><h2>On this page</h2>{page.sections.map((section) => <a href={`#${section.id}`} key={section.id}>{section.title}</a>)}</aside>
     </div>
   );
 }
 
 const LINK_PATTERN = /\[([^\]]+)\]\(([^)\s]+)\)/g;
 
-// Renders plain text with [label](url) markdown links; everything else stays literal text.
+// Renders plain text with `code` spans and [label](url) markdown links; everything else stays literal.
 function Inline({ text }: { text: string }) {
+  const segments = text.split("`");
+  if (segments.length === 1) return <Links text={text} />;
+  return <>{segments.map((segment, index) => (index % 2 ? <code key={index}>{segment}</code> : <Links text={segment} key={index} />))}</>;
+}
+
+function Links({ text }: { text: string }) {
+  const bold = text.split("**");
+  if (bold.length > 1) return <>{bold.map((segment, index) => (index % 2 ? <strong key={index}><Links text={segment} /></strong> : <Links text={segment} key={index} />))}</>;
   const parts: React.ReactNode[] = [];
   let cursor = 0;
   for (const match of text.matchAll(LINK_PATTERN)) {
@@ -152,7 +143,7 @@ function Inline({ text }: { text: string }) {
     else parts.push(<a href={href} target="_blank" rel="noreferrer" key={index}>{label} ↗</a>);
     cursor = index + match[0].length;
   }
-  if (parts.length === 0) return text;
+  if (parts.length === 0) return <>{text}</>;
   if (cursor < text.length) parts.push(text.slice(cursor));
   return <>{parts}</>;
 }

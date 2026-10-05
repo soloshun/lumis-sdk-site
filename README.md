@@ -1,98 +1,77 @@
-# vinext-starter
+# Lumis SDK website
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+The website and documentation for [Lumis SDK](https://github.com/soloshun/lumis-sdk), live at **[lumis-sdk.vercel.app](https://lumis-sdk.vercel.app)**:
 
-## Prerequisites
+- the home page at `/`;
+- the documentation at [`/docs`](https://lumis-sdk.vercel.app/docs).
 
-- Node.js `>=22.13.0`
+Lumis SDK is an experimental Python SDK for evidence-grounded incident investigation. It is the open-source (Apache-2.0) proof of concept of Lumis' investigation core; other Lumis products and services are separate. The company site is [lumis.qadimlabs.com](https://lumis.qadimlabs.com).
 
-## Quick Start
+Built with Next.js 16, React 19 and TypeScript, and deployed on Vercel.
 
-```bash
-npm install
-npm run dev
-npm run build
+## Content rules
+
+Everything on the site must be true of the published **`lumis-sdk` 0.1.0**:
+
+- **Read-only.** Lumis has no remediation executor, no automatic rule learning and no hosted service.
+- **Experimental.** APIs may change before 1.0.
+- **Evaluated on one estate.** The only live evaluation is the GridCast reference estate: 15 injected failures, one model (DeepSeek v4 pro). Results come from the [research notes](https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md), exclude scenario N (a ground-truth leak), and always carry that caveat.
+- **Open source means the SDK only.** Do not write "built in the open", "built in public" or "no lock-in". The tests fail on those phrases.
+
+Sources of truth are the SDK's `README.md`, `docs/` and `CHANGELOG.md` on `main`. When the SDK changes, update these together and bump `CONTENT_UPDATED` in `lib/site.ts`:
+
+- the docs (`content/docs.ts`);
+- the home page;
+- the tests.
+
+## Development
+
+Use Node 22.x.
+
+```sh
+npm ci
+npm run dev          # http://localhost:3000
+npm run lint
+npx tsc --noEmit
+npm test             # production build + smoke tests on port 4397
 ```
 
-This starter does not use `wrangler.jsonc`.
+`npm test` builds the site and checks the production server. It covers:
 
-## Included Shape
+- the home page and all 16 docs pages: status banner, canonical URLs and one `h1` each;
+- the palette, structured data, sitemap and robots;
+- legacy redirects, `llms.txt` / `llms-full.txt` and the social image;
+- the wording rules above.
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+## Where things live
 
-## Workspace Auth Headers
+| Path | Contents |
+|---|---|
+| `content/docs.ts` | All documentation pages as typed blocks, grouped into Start here, Concepts, Build and Project. Text supports `code`, **bold** and `[links](/docs/...)`; diagrams are Mermaid. |
+| `components/home-sections.tsx` | Home page sections. The hero YAML is the SDK's tested small-project example; keep it exact. |
+| `components/community.tsx` | Live GitHub stars and contributors, plus email contact (`solomon@qadimlabs.com`). |
+| `components/site-nav.tsx` | Status banner, home navigation and the docs top bar. |
+| `components/brand.tsx` | The wordmark. It links home on the home page and to `/docs` in the docs. |
+| `components/mermaid.tsx` | Diagram rendering. It waits for fonts and passes the resolved font family, so labels are not clipped. |
+| `app/globals.css` | Design system: paper and ink with one teal accent, light and dark via `data-doc-theme`. |
+| `app/docs/[[...slug]]/page.tsx` | Docs layout: sidebar, table of contents, "Copy as Markdown", previous and next. |
+| `app/icon.svg` | Tab icon: the Lumis symbol, shared with lumis.qadimlabs.com. |
+| `app/og/route.tsx` | The 1200×630 social image, generated from code. |
+| `lib/site.ts` | Canonical origin, title, description and content date. |
+| `next.config.ts` | Permanent redirects for retired and renamed docs URLs. |
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
+## Deployment
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+Vercel builds `main` with the Next.js framework preset (`next build`, default output directory).
 
-Treat the full name as optional and fall back to email when it is absent:
+- **Canonical origin.** The order is `NEXT_PUBLIC_SITE_URL`, then `VERCEL_PROJECT_PRODUCTION_URL`, then `https://lumis-sdk.vercel.app`. It drives canonical URLs, the sitemap, JSON-LD, social metadata and `llms.txt`.
+- **Search verification.** Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` add verification tags.
+- **Preview builds.** Vercel previews are `noindex` and disallowed in `robots.txt`.
 
-```tsx
-import { headers } from "next/headers";
+The Cloudflare, database and starter-auth files (`worker/`, `db/`, `drizzle/`, `examples/`) are unused leftovers from the original template and are not part of the Vercel build.
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+## Branches
 
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+- `dev`: where changes land, through pull requests.
+- `main`: production. Promote from `dev` after review.
+- `legacy/pre-operational-intelligence-2026-10-04`: the original website, preserved.

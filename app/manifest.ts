@@ -1,14 +1,15 @@
 import type { MetadataRoute } from "next";
+import { SITE_TITLE, SITE_DESCRIPTION } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Lumis SDK — Agentic Self-Healing for Data & AI Pipelines",
+    name: SITE_TITLE,
     short_name: "Lumis SDK",
-    description: "Open-source, vendor-agnostic Python framework for deterministic-first diagnosis and guarded recovery across data, ML, and software delivery pipelines.",
+    description: SITE_DESCRIPTION,
     start_url: "/",
     display: "standalone",
-    background_color: "#050507",
-    theme_color: "#050507",
+    background_color: "#f7f7f4",
+    theme_color: "#0d7a6f",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
 }
