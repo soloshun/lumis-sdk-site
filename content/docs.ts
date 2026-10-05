@@ -115,7 +115,7 @@ export const docs: DocPage[] = [
         table(["", "Status"], [
           ["Release", "`lumis-sdk` 0.1.0 on PyPI (5 October 2026)"],
           ["Python", "3.11, 3.12 and 3.13"],
-          ["License", "Apache-2.0"],
+          ["License", "Apache-2.0 for this SDK. The SDK is the open-source proof of concept of Lumis' investigation core; other Lumis products and services are separate and not necessarily open source."],
           ["Evaluation", "The [GridCast reference estate](/docs/evaluation): 15 injected failures, one model (DeepSeek v4 pro)"],
           ["Actions on your systems", "None. Lumis reads and reports."],
         ]),
@@ -774,7 +774,11 @@ export const docs: DocPage[] = [
         p(`Not planned for the SDK at this stage: automatic remediation, automatic rule learning, or a hosted service. See the [roadmap](${GITHUB_REPO}/blob/main/ROADMAP.md) and [changelog](${GITHUB_REPO}/blob/main/CHANGELOG.md).`),
       ]},
       {id: "contact", title: "Get in touch", blocks: [
-        p(`Lumis is early and small. Questions, ideas, bug reports and offers to help are welcome by email: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}). The source is on [GitHub](${GITHUB_REPO}) under Apache-2.0.`),
+        p(`Lumis is early and small. Questions, ideas, bug reports and offers to help are welcome by email: [${CONTACT_EMAIL}](mailto:${CONTACT_EMAIL}).`),
+      ]},
+      {id: "open-source", title: "What is open source", blocks: [
+        p(`This SDK is open source under Apache-2.0, and its source is on [GitHub](${GITHUB_REPO}). It is a proof of concept of Lumis' investigation core, released so that the approach can be inspected, run and evaluated. Other proofs of concept may be published the same way in future.`),
+        p("That does not make all of Lumis open source. Other Lumis products and services, including anything hosted or commercial, are separate and may be offered under different terms."),
       ]},
       {id: "migration", title: "Migrating from 0.0.x", blocks: [
         p("0.1.0 replaces the earlier framework entirely. The old `diagnose`, `resolve`, rules, plugins, memory and lifecycle interfaces were removed, with no compatibility layer. To migrate, start a fresh project with `lumis init`, map your incidents, identities, topology and observations to the current contracts, and re-express diagnostic rules as checks with predictions and falsifiers. Use a fresh audit store."),

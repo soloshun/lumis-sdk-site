@@ -32,7 +32,7 @@ export function Hero() {
     <section className="hero">
       <div className="shell hero-layout">
         <div>
-          <p className="eyebrow">Open-source Python SDK · Apache-2.0</p>
+          <p className="eyebrow">Python SDK · Apache-2.0 · proof of concept</p>
           <h1>Incident investigation, <em>grounded in evidence.</em></h1>
           <p className="hero-lede">
             Lumis checks known failure signatures first, lets a bounded model investigate only when they

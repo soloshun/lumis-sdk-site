@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "operational graph",
     "Python incident investigation framework",
     "vendor-neutral observability",
-    "open-source operational intelligence",
+    "incident investigation proof of concept",
   ],
   authors: [{ name: "Solomon Eshun", url: "https://github.com/soloshun" }],
   creator: "Solomon Eshun and Lumis SDK contributors",
