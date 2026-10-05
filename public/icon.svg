@@ -1,10 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#050507"/>
-  <g fill="#f5f6f8">
-    <rect x="8" y="7" width="5" height="5"/>
-    <rect x="8" y="13.5" width="5" height="5"/>
-    <rect x="8" y="20" width="5" height="5"/>
-    <rect x="14.5" y="20" width="5" height="5"/>
-  </g>
-  <rect x="21" y="20" width="5" height="5" fill="#2962ff"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#142732"/><g transform="translate(8 8)" stroke="#d9edf4" stroke-width="1.7"><path d="M24 24 27 5M24 24 41 15M24 24 39 36M24 24 21 44M24 24 5 34M24 24 8 13"/><g fill="#d9edf4" stroke="none"><circle cx="24" cy="24" r="6"/><circle cx="27" cy="5" r="2.6"/><circle cx="41" cy="15" r="2.6"/><circle cx="39" cy="36" r="2.6"/><circle cx="21" cy="44" r="2.6"/><circle cx="5" cy="34" r="2.6"/><circle cx="8" cy="13" r="2.6"/></g></g></svg>

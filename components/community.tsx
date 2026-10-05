@@ -104,17 +104,20 @@ export function Community() {
           <div className="community-card">
             <h3>Contributors</h3>
             <p>Lumis is early, and small. Questions, ideas, bug reports and offers to help are all welcome by email.</p>
-            <span className="community-label">PEOPLE WHO HAVE CONTRIBUTED</span>
-            <div className="contributor-row">
-              {contributors.map((person) => (
-                <a className="contributor" key={person.login} href={person.html_url} target="_blank" rel="noreferrer" title={person.login}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${person.avatar_url}${person.avatar_url.includes("?") ? "&" : "?"}s=80`} alt={person.login} loading="lazy" width={40} height={40} />
-                </a>
-              ))}
-              <a className="contributor join" href={`mailto:${CONTACT_EMAIL}?subject=Lumis%20SDK`} title="Get in touch" aria-label="Email to get involved">+</a>
-            </div>
-            <p className="contact">Get in touch: <a href={`mailto:${CONTACT_EMAIL}?subject=Lumis%20SDK`}>{CONTACT_EMAIL}</a></p>
+            {contributors.length > 0 && (
+              <div className="contributors">
+                <span className="community-label">PEOPLE WHO HAVE CONTRIBUTED</span>
+                <div className="contributor-row">
+                  {contributors.map((person) => (
+                    <a className="contributor" key={person.login} href={person.html_url} target="_blank" rel="noreferrer" title={person.login}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`${person.avatar_url}${person.avatar_url.includes("?") ? "&" : "?"}s=80`} alt={person.login} loading="lazy" width={40} height={40} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+            <a className="button" href={`mailto:${CONTACT_EMAIL}?subject=Lumis%20SDK`}>Email {CONTACT_EMAIL}</a>
           </div>
           <a className="community-card star-board" href={`${GITHUB}/stargazers`} target="_blank" rel="noreferrer" aria-label="GitHub stars">
             <span className="community-label">GITHUB STARS</span>

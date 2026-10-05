@@ -58,6 +58,8 @@ test("homepage states the current release, boundaries and honest results", async
   assert.match(html, /id="research"/);
   assert.match(html, /id="community"/);
   assert.match(html, /solomon@qadimlabs\.com/);
+  assert.match(html, /href="https:\/\/lumis\.qadimlabs\.com"/);
+  assert.match(html, /lumis\.qadimlabs\.com\/blog/);
   assert.match(html, /Download PDF/);
   const paper = await render("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf");
   assert.equal(paper.status, 200);
