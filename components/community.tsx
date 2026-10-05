@@ -96,9 +96,9 @@ export function Community() {
     <section className="section alt" id="community" ref={sectionRef}>
       <div className="shell">
         <div className="section-head">
-          <p className="eyebrow">Open source</p>
-          <h2>Built in the open, under Apache-2.0.</h2>
-          <p>Read the source, run it locally, and see exactly what it checked. There is no hosted account and no lock-in.</p>
+          <p className="eyebrow">The SDK is open source</p>
+          <h2>An open-source proof of concept, under Apache-2.0.</h2>
+          <p>Lumis SDK is the proof of concept of Lumis&rsquo; investigation core, and it is released as open source: read the source, run it locally, and see exactly what it checked. Other Lumis products and services are separate and are not necessarily open source.</p>
         </div>
         <div className="community-grid">
           <div className="community-card">

@@ -64,7 +64,8 @@ test("homepage states the current release, boundaries and honest results", async
   const paper = await render("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf");
   assert.equal(paper.status, 200);
   assert.match(paper.headers.get("content-type"), /application\/pdf/);
-  assert.doesNotMatch(html, /--branch dev|COMING SOON|Discord|diagnose --config|13 RUNNABLE COOKBOOKS/);
+  assert.doesNotMatch(html, /--branch dev|COMING SOON|Discord|diagnose --config|13 RUNNABLE COOKBOOKS|[Bb]uilt in the open|built in public|lock-in/);
+  assert.match(html, /proof of concept, under Apache-2\.0/);
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
   assert.match(html, /<title>Lumis SDK: Evidence-Grounded Incident Investigation<\/title>/);
   assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/?"/);
