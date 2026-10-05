@@ -3,125 +3,218 @@ import { Brand } from "./brand";
 import { CopyCode } from "./copy-code";
 
 const REPO = "https://github.com/soloshun/lumis-sdk";
-const START = `git clone --branch dev ${REPO}.git\ncd lumis-sdk\nuv sync --all-groups`;
+const PYPI = "https://pypi.org/project/lumis-sdk/";
+const RESEARCH_NOTES = "https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md";
+const PAPER = "https://arxiv.org/abs/2608.01955";
+const INSTALL = 'pip install "lumis-sdk[http,agent]"';
+
+// The terminal check from docs/examples/small-project in the SDK repository (tested there).
+const CHECK = `checks:
+  - id: api-down
+    terminal: true
+    explains_entities: [service:api]
+    hypothesis:
+      id: api-unavailable
+      statement: The API is down; both its scrape target
+        and an external HTTP probe fail.
+      causal_path: [service:api]
+      evidence_needed: [api-up, api-probe]
+      predictions:
+        - {entity_id: "service:api", key: up, operator: eq, value: 0}
+        - {entity_id: "service:api", key: probe_success, operator: eq, value: 0}
+      falsifiers:
+        - {entity_id: "service:api", key: up, operator: eq, value: 1}
+        - {entity_id: "service:api", key: probe_success, operator: eq, value: 1}`;
 
 export function Hero() {
-  return <section className="hero dark-zone">
-    <div className="hero-grid" aria-hidden="true" />
-    <div className="hero-aurora" aria-hidden="true" />
-    <div className="shell hero-layout">
-      <div className="hero-copy">
-        <div className="status-line"><span>OPEN SOURCE / APACHE-2.0</span><span>EXPERIMENTAL · PYTHON 3.11+</span></div>
-        <h1>Operational intelligence.<em>Grounded in evidence.</em></h1>
-        <p>A vendor-neutral Python SDK for investigating complex systems. Connect the context, test competing explanations, and give engineers an inspectable account of what the evidence supports.</p>
-        <div className="hero-actions"><Link className="button primary" href="/docs/quickstart">Get started <span>→</span></Link><a className="button secondary" href={REPO}>View on GitHub ↗</a><a className="button secondary" href="https://arxiv.org/abs/2608.01955">Read the paper ↗</a></div>
-        <div className="source-install"><div><span>DEVELOPMENT CHECKOUT</span><CopyCode code={START} /></div><pre><code>{START}</code></pre></div>
-        <small className="release-note">The new architecture is on dev. An older package-index release is not this SDK.</small>
+  return (
+    <section className="hero">
+      <div className="shell hero-layout">
+        <div>
+          <p className="eyebrow">Open-source Python SDK · Apache-2.0</p>
+          <h1>Incident investigation, <em>grounded in evidence.</em></h1>
+          <p className="hero-lede">
+            Lumis checks known failure signatures first, lets a bounded model investigate only when they
+            are not enough, and tests every explanation against evidence it collected itself. It reads;
+            it never acts. A person decides.
+          </p>
+          <div className="install"><code>{INSTALL}</code><CopyCode code={INSTALL} /></div>
+          <div className="hero-actions">
+            <Link className="button primary" href="/docs/quickstart">Get started</Link>
+            <Link className="button" href="/docs/how-it-works">How it works</Link>
+            <a className="button" href={REPO} target="_blank" rel="noreferrer">GitHub ↗</a>
+          </div>
+          <div className="hero-meta"><span>Python 3.11+</span><span>Read-only by design</span><span>Model optional</span></div>
+        </div>
+        <figure className="panel" style={{ margin: 0 }} aria-label="A deterministic check and the report it produced">
+          <div className="panel-head"><span>lumis.yaml — one deterministic check</span><span>from the small-project guide</span></div>
+          <pre><code>{CHECK}</code></pre>
+          <div className="panel-head"><span>lumis incident … → report</span><span>both signals at 0</span></div>
+          <ul className="report-lines">
+            <li><b>finding api-down</b><span className="ok">match · terminal</span></li>
+            <li><b>route</b><span>deterministic</span></li>
+            <li><b>conclusion</b><span className="ok">supported_diagnosis</span></li>
+            <li><b>model requests</b><span>0</span></li>
+            <li><b>requires_human_review</b><span>true</span></li>
+          </ul>
+          <figcaption className="panel-foot">If the API is up the check is falsified; if data is missing it stays unknown. Neither is reported as a diagnosis.</figcaption>
+        </figure>
       </div>
-      <InvestigationInstrument />
-    </div>
-    <div className="hero-facts shell"><span>EVIDENCE FIRST</span><span>MODEL OPTIONAL</span><span>BOUNDED BY DESIGN</span><span>HUMAN REVIEW</span></div>
-  </section>;
+    </section>
+  );
 }
 
-function InvestigationInstrument() {
-  return <div className="hero-instrument investigation-instrument" aria-label="Illustrative incident investigation, not a live system">
-    <div className="instrument-head"><span>INCIDENT / DEMO-001</span><span>SYNTHETIC WALKTHROUGH</span></div>
-    <div className="investigation-symptom"><span>01 / SCOPE THE CONTEXT</span><h2>Follow the relationships.<br />Test the explanation.</h2></div>
-    <OperationalGraph />
-    <div className="evidence-row"><span>02 / DETERMINISTIC TRIAGE</span><strong>Health signature</strong><b>MATCH · NONTERMINAL</b></div>
-    <div className="hypothesis-ledger"><div><span>03 / TEST EXPLANATIONS</span><span>EVIDENCE STATE</span></div><p><b>Service unavailability</b><em className="support">SUPPORTED</em></p><p><b>Underlying cause</b><em className="unresolved">UNRESOLVED</em></p><small>An observed symptom is not a complete causal explanation.</small></div>
-    <div className="review-result"><span>04 / REPORT, NOT REMEDIATE</span><strong>Human review required <span>↗</span></strong><code>truth_state: unconfirmed_hypothesis</code></div>
-    <p className="instrument-caption">Declared graph sample + synthetic health finding. Relationships are context, not proof of cause. No live system or model call.</p>
-  </div>;
+const STEPS = [
+  ["Prepare", "Build an operational graph of your services from what you declare and what Lumis discovers, then scope it to the incident.", "Kubernetes · Prometheus · Tempo · Prefect"],
+  ["Triage", "Test your known failure signatures against facts from operator-registered queries. A sufficient signature concludes with no model call.", "match · no_match · unknown"],
+  ["Investigate", "Only if needed and enabled: one bounded model proposes explanations and asks for evidence by query ID. It cannot write queries or change anything.", "OpenRouter · OpenAI · Anthropic · Gemini"],
+  ["Assess", "Every explanation's predictions and falsifiers are checked mechanically. A diagnosis needs supported explanations that agree on one cause.", "supported · contradicted · unresolved"],
+] as const;
+
+export function HowItWorks() {
+  return (
+    <section className="section" id="how">
+      <div className="shell">
+        <div className="section-head" data-reveal="">
+          <p className="eyebrow">How it works</p>
+          <h2>Checks first. A model only when needed. Evidence decides.</h2>
+          <p>Every path ends in the same structured report for a person to review: what was found, what supports it, what contradicts it, and what is still unknown.</p>
+        </div>
+        <div className="steps" data-reveal="">
+          {STEPS.map(([title, body, detail], index) => (
+            <div className="step" key={title}><b>{index + 1}</b><h3>{title}</h3><p>{body}</p><small>{detail}</small></div>
+          ))}
+        </div>
+        <p className="flow-note">Read-only throughout: there is no remediation executor. <Link className="text-link" href="/docs/how-it-works">Read the full walkthrough →</Link></p>
+      </div>
+    </section>
+  );
 }
 
-function OperationalGraph() {
-  const nodes = [
-    {id: "dataset", x: 20, y: 26, name: "Input dataset", kind: "DATASET"},
-    {id: "flow", x: 180, y: 26, name: "Pipeline flow", kind: "WORKFLOW"},
-    {id: "host", x: 340, y: 26, name: "Worker host", kind: "RESOURCE"},
-    {id: "database", x: 20, y: 180, name: "PostgreSQL", kind: "DEPENDENCY"},
-    {id: "service", x: 180, y: 180, name: "Demo service", kind: "AFFECTED ENTITY"},
-    {id: "cache", x: 340, y: 180, name: "Cache", kind: "DEPENDENCY"},
-  ];
-  return <figure className="operational-graph"><svg viewBox="0 0 480 272" role="img" aria-labelledby="graph-title graph-desc">
-    <title id="graph-title">Sample operational dependency graph</title>
-    <desc id="graph-desc">Six declared entities. A pipeline consumes a dataset and depends on the affected service. A host runs the service; the service depends on PostgreSQL and a cache. Edges are relationships, not causal conclusions.</desc>
-    <defs><marker id="graph-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 10 5 0 10" fill="var(--signal-soft)" /></marker></defs>
-    <g className="graph-edges" fill="none" markerEnd="url(#graph-arrow)">
-      <path d="M180 57H146" /><path d="M242 90V174" /><path d="M401 90V125H305V180" /><path d="M180 212H146" /><path d="M306 212H334" />
-    </g>
-    <g className="graph-edge-labels"><text x="162" y="45">consumes</text><text x="234" y="128" textAnchor="end">depends_on</text><text x="356" y="117">hosts</text><text x="163" y="199">depends_on</text><text x="319" y="199">depends_on</text></g>
-    {nodes.map(node => <g key={node.id} className={node.id === "service" ? "graph-node affected" : "graph-node"} transform={`translate(${node.x} ${node.y})`}><rect width="124" height="64" rx="3" /><circle cx="15" cy="16" r="3" /><text className="graph-kind" x="62" y="20" textAnchor="middle">{node.kind}</text><text className="graph-name" x="62" y="44" textAnchor="middle">{node.name}</text></g>)}
-  </svg><figcaption><span><i />Declared relationship</span><span><i className="incident-node" />Incident scope</span><span>6 entities / 5 edges · illustrative</span></figcaption></figure>;
+const BARS = [
+  ["A model given only the alert", 0.04, false],
+  ["The same model plus the service graph", 0.18, false],
+  ["One model call with curated evidence", 0.54, false],
+  ["Lumis: triage, investigator, assessment", 0.89, true],
+] as const;
+
+export function Results() {
+  return (
+    <section className="section alt" id="results">
+      <div className="shell results">
+        <div data-reveal="">
+          <p className="eyebrow">First results</p>
+          <div className="section-head" style={{ marginBottom: 24 }}>
+            <h2>Tested on a live estate with fifteen injected failures.</h2>
+            <p>
+              GridCast is an open reference estate we built: a demand-forecasting system on Kubernetes with
+              Prometheus, Loki, Tempo, Prefect and PostgreSQL. We broke it fifteen ways and asked each system
+              to find the cause of the same frozen incident.
+            </p>
+          </div>
+          <div className="stat-row">
+            <div className="stat"><strong>15</strong><span>failures injected through releases, config, vendors and data</span></div>
+            <div className="stat"><strong>25 / 28</strong><span>runs where Lumis named the right component and mechanism</span></div>
+            <div className="stat"><strong>7 / 8</strong><span>on the hard, silent faults, against 2 / 8 for one model call</span></div>
+          </div>
+          <Link className="text-link" href="/docs/evaluation">How it was measured, and what went wrong →</Link>
+        </div>
+        <div className="bars" data-reveal="">
+          <h3>Correct root cause (component and mechanism)</h3>
+          <p>Same model, DeepSeek v4 pro, for every model-based system. 28 runs each.</p>
+          {BARS.map(([label, value, lumis]) => (
+            <div className={`bar${lumis ? " lumis" : ""}`} key={label}>
+              <span>{label}</span><i style={{ width: `${value * 100}%` }} /><b>{value.toFixed(2)}</b>
+            </div>
+          ))}
+          <p className="caveat">
+            A proof of concept, not a benchmark: one synthetic estate written by our team, one model, two runs
+            per system per scenario. One scenario is excluded after we found a ground-truth leak. <a className="text-link" href={RESEARCH_NOTES} target="_blank" rel="noreferrer">Full research notes ↗</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-const principles = [
-  ["Context before conclusions", "An incident-scoped operational graph connects relevant entities and dependencies without sending an entire estate to a model."],
-  ["Known patterns first", "Deterministic signatures produce match, no_match, or unknown. Only a sufficient signature ends triage."],
-  ["One bounded investigator", "When explicitly enabled, a tool-using agent explores uncertainty through approved evidence, graph, code, and isolated probes."],
-  ["Evidence decides", "Predictions and falsifiers are assessed mechanically. Missing or conflicting observations remain unresolved; contradictions matter."],
-  ["Every step inspectable", "Structured reports retain findings, evidence, tool receipts, unresolved questions, and usage—not raw chain-of-thought."],
-  ["Engineers keep authority", "The current SDK stops at human review. Suggestions are text; no patch, rollback, remediation, or rule promotion runs automatically."],
-];
-
-export function Principles() {
-  return <section className="paper-section" id="principles"><div className="shell section-grid"><div className="section-intro"><p className="eyebrow">UNDERSTAND BEFORE YOU ACT</p><h2>Models propose.<br />Lumis tests.</h2><p>Build investigations that can be questioned, reproduced, and revised. An explanation earns evidence support—not automatic authority.</p><Link className="text-link" href="/docs/investigation">Explore the investigation model →</Link></div><div className="principle-grid">{principles.map(([title, copy], i) => <article className="principle" key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>;
+export function Boundaries() {
+  return (
+    <section className="section" id="boundaries">
+      <div className="shell">
+        <div className="section-head" data-reveal="">
+          <p className="eyebrow">Scope</p>
+          <h2>What the SDK does today, and what it does not.</h2>
+          <p>Lumis is research software at version 0.1.0. It is useful for investigation now, and deliberately narrow.</p>
+        </div>
+        <div className="bounds" data-reveal="">
+          <div className="bound yes"><h3>Included</h3><ul>
+            <li>YAML-declared, read-only sources: Kubernetes, Prometheus, Loki, Tempo, Prefect, PostgreSQL, Git and rollout history</li>
+            <li>An operational graph scoped to each incident</li>
+            <li>Deterministic checks with strict rules for concluding</li>
+            <li>One optional tool-using investigator with budgets</li>
+            <li>Mechanical assessment and a structured, auditable report</li>
+            <li>Local SQLite audit records and separate human resolutions</li>
+          </ul></div>
+          <div className="bound no"><h3>Not included</h3><ul>
+            <li>Any action on your systems: no restarts, rollbacks or applied patches</li>
+            <li>Automatic learning or promotion of new rules</li>
+            <li>A hosted service, dashboard or alert receiver</li>
+            <li>Confirmed root cause: &ldquo;supported&rdquo; means supported by evidence, not proven</li>
+            <li>Evaluation beyond one estate and one model family</li>
+          </ul></div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
-export function Architecture() {
-  return <section className="architecture dark-zone" id="architecture"><div className="shell"><div className="section-heading split-heading"><div><p className="eyebrow">A PORTABLE INVESTIGATION KERNEL</p><h2>Your systems.<br />One evidence model.</h2></div><p>Connect externally through telemetry, topology, and typed observations. The SDK does not import your application, replace your monitoring stack, or require a graph server.</p></div><div className="architecture-board"><div className="arch-column"><span className="arch-label">OPERATOR-OWNED INPUTS</span><ArchNode name="Incidents & topology" detail="time windows · identities · relationships" /><ArchNode name="Read-only observations" detail="snapshots · metrics · logs · traces · workflows" /><ArchNode name="Approved source context" detail="explicit file allowlists · local Git" /></div><span className="arch-arrow" aria-hidden="true">→</span><div className="arch-column core"><span className="arch-label">LUMIS SDK</span><ArchNode name="Operational graph" detail="Pydantic + NetworkX MultiDiGraph" active /><ArchNode name="Checks & investigation" detail="deterministic triage · optional Pydantic AI" active /><ArchNode name="Mechanical assessment" detail="predictions · falsifiers · provenance" active /></div><span className="arch-arrow" aria-hidden="true">→</span><div className="arch-column"><span className="arch-label">INSPECTABLE OUTPUTS</span><ArchNode name="Incident report" detail="support · contradiction · uncertainty" /><ArchNode name="Tool receipts & budgets" detail="queries · requests · tokens · probes" /><ArchNode name="Local audit records" detail="SQLite · separate human resolutions" /></div></div><div className="architecture-note"><span className="blue-pixel" />Core contracts remain independent of the application and optional providers. Discovery and investigation have separate, explicit limits.</div><Link className="text-link" href="/docs/architecture">Read the architecture →</Link></div></section>;
-}
-
-function ArchNode({name, detail, active = false}: {name: string; detail: string; active?: boolean}) {
-  return <div className={`arch-node ${active ? "active" : ""}`}><i /><div><strong>{name}</strong><span>{detail}</span></div></div>;
-}
-
-export function Workflow() {
-  const steps = [["Prepare", "Discover and bind a scoped estate."], ["Triage", "Test known signatures against observations."], ["Investigate", "Inspect and probe only when enabled."], ["Assess", "Validate explanations against evidence."], ["Review", "Give engineers findings and open questions."]];
-  return <section className="paper-section lifecycle-section" id="workflow"><div className="shell"><div className="section-heading split-heading reverse light"><p>A sufficient known signature can avoid a model call. Ambiguous cases reach one bounded investigator—or a human when no agent is enabled. Both paths end in the same reviewable report.</p><div><p className="eyebrow">DETERMINISTIC OUTSIDE / AGENTIC WHEN NEEDED</p><h2>A small loop.<br />Explicit boundaries.</h2></div></div><div className="lifecycle-track current-investigation">{steps.map(([title, detail], i) => <div className="stage current" key={title}><span>0{i+1}</span><i /><strong>{title}</strong><small>{detail}</small></div>)}</div><div className="guard-note"><b>SUPPORT ≠ CONFIRMATION</b><span>A supported explanation is not causal proof. Probe results are synthetic evidence, and a failed query is not a false measurement.</span></div><EvidenceChart /></div></section>;
-}
-
-function EvidenceChart() {
-  return <figure className="evidence-chart"><div><p className="eyebrow">SYNTHETIC QUICKSTART / EVIDENCE STATES</p><h3>What is observed. What remains open.</h3><p>The offline scaffold establishes service unavailability. It does not establish why the service failed.</p></div><div className="evidence-state-chart" role="img" aria-label="Categorical evidence chart: service unavailability is supported; underlying root cause remains unresolved; causal confirmation is not established.">{[["Service unavailability", "SUPPORTED", "supported"], ["Underlying cause", "UNRESOLVED", "unknown"], ["Causal confirmation", "NOT ESTABLISHED", "unknown"]].map(([label, status, kind]) => <div className={`evidence-chart-row ${kind}`} key={label}><strong>{label}</strong><span><i /><i /><i /><i /></span><b>{status}</b></div>)}<small>Evidence categories—not confidence scores or performance metrics.</small></div></figure>;
-}
+const QUICK = `pip install "lumis-sdk[http,agent]"
+lumis init --directory ./my-lumis
+lumis doctor --project ./my-lumis/lumis.yaml
+lumis incident --project ./my-lumis/lumis.yaml \\
+  --incident ./my-lumis/incident.json \\
+  --observations ./my-lumis/observations.json`;
 
 export function Start() {
-  return <section className="framework dark-zone" id="framework"><div className="shell"><div className="section-heading split-heading"><div><p className="eyebrow">THE OPEN FOUNDATION</p><h2>Small enough to understand. Open enough to extend.</h2></div><p>Lumis SDK is the reusable investigation kernel—not a monitoring system, orchestrator, hosted control plane, or automatic recovery executor.</p></div><div className="sdk-lumis"><div className="sdk-lumis-intro"><p className="eyebrow">OPEN SOURCE / PLATFORM COMING SOON</p><h2>Lumis SDK stays useful on its own.</h2><p>Start locally with a synthetic incident, then connect your own systems through approved read-only observations.</p></div><div className="compare-panel"><span>LUMIS SDK</span><ul><li>Vendor-neutral Python contracts</li><li>Scoped operational graphs</li><li>Deterministic checks, optional model</li><li>Inspectable human-review reports</li></ul><Link href="/docs/architecture">Explore the architecture →</Link></div><div className="compare-panel managed"><span>LUMIS PLATFORM · COMING SOON</span><ul><li>Broader operational intelligence</li><li>Managed team workflows</li><li>Reviewed learning and reasoning</li><li>Policy-controlled action research</li></ul><span className="coming-soon-label">PLATFORM IN DEVELOPMENT</span></div></div><div className="offline-start"><div><p className="eyebrow">OFFLINE FIRST RUN</p><h3>One incident. No cloud account.</h3><p>A nonterminal health finding and an unconfirmed human-review report. No model call. No automatic fix.</p><Link className="text-link" href="/docs/quickstart">Run the quickstart →</Link></div><div className="start-command"><div className="instrument-head"><span>LOCAL / SYNTHETIC</span><CopyCode code={QUICK_RUN} /></div><pre><code>{QUICK_RUN}</code></pre></div></div></div></section>;
-}
-const QUICK_RUN = `uv run lumis init --directory /tmp/lumis-demo\nuv run lumis doctor --project /tmp/lumis-demo/lumis.yaml\nuv run lumis incident \\\n  --project /tmp/lumis-demo/lumis.yaml \\\n  --incident /tmp/lumis-demo/incident.json \\\n  --observations /tmp/lumis-demo/observations.json`;
-
-export function Project() {
-  return <section className="paper-section project-section" id="project"><div className="shell section-grid"><div className="section-intro"><p className="eyebrow">RESEARCH SOFTWARE / INDEPENDENT FOUNDATION</p><h2>Open today.<br />More to understand.</h2><p>Lumis SDK is the experimental, Apache-2.0 foundation for evidence-grounded operational intelligence. Data, AI, and software systems are starting points—not the limit of the underlying contracts.</p><Link className="text-link" href="/docs/project">Project status and contribution →</Link></div><div className="project-boundaries"><article><span>CURRENT SDK</span><h3>Investigation, not automatic recovery.</h3><p>Typed contracts, scoped graphs, read-only connectors, deterministic checks, one optional investigator, isolated experiments, and local audit records.</p></article><article><span>LUMIS PLATFORM · COMING SOON</span><h3>A broader operational intelligence direction.</h3><p>Managed workflows, advanced reasoning, reviewed learning, and policy-controlled action are platform and research work—not shipped SDK capabilities.</p></article><article><span>FOUNDATIONAL RESEARCH / arXiv 2608.01955</span><h3>From guarded recovery to grounded investigation.</h3><p>The earlier self-healing architecture informs the research. The current SDK has a narrower, independently testable investigation boundary.</p><a className="text-link" href="https://arxiv.org/abs/2608.01955">Read the foundational preprint ↗</a></article></div></div></section>;
+  return (
+    <section className="section alt" id="start">
+      <div className="shell start-grid">
+        <div data-reveal="">
+          <p className="eyebrow">Get started</p>
+          <h2>Run your first investigation in a minute.</h2>
+          <p>The scaffold is fully offline: no cluster, no API key, no model call. Then point it at one real service with the small-project guide.</p>
+          <div className="hero-actions">
+            <Link className="button primary" href="/docs/quickstart">Quickstart</Link>
+            <Link className="button" href="/docs/small-project">Your first real project</Link>
+          </div>
+        </div>
+        <div className="panel" data-reveal="">
+          <div className="panel-head"><span>Terminal</span><CopyCode code={QUICK} /></div>
+          <pre><code>{QUICK}</code></pre>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function Research() {
   return (
-    <section className="paper-section research-section" id="research">
-      <div className="shell section-grid">
-        <div className="section-intro" data-reveal="">
-          <p className="eyebrow">FROM RESEARCH TO FRAMEWORK</p>
-          <h2>Born in a paper.<br />Built in the open.</h2>
-          <p>
-            Lumis began with research into vendor-agnostic, guarded self-healing.
-            The current SDK focuses that foundation on evidence-grounded investigation:
-            understand the incident, test explanations, and keep engineers in control.
-          </p>
+    <section className="section" id="research">
+      <div className="shell">
+        <div className="section-head" data-reveal="">
+          <p className="eyebrow">Research</p>
+          <h2>Where Lumis comes from.</h2>
+          <p>Lumis grew out of research into guarded, vendor-neutral self-healing. The SDK narrows that work to the part that can be tested today: investigation.</p>
         </div>
-        <article className="paper-card" data-reveal="">
-          <div className="paper-card-head"><span>RESEARCH PAPER</span><span className="paper-status">PUBLISHED ON arXiv · 2608.01955</span></div>
-          <h3>Agentic Self-Healing for Data &amp; AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software</h3>
-          <p className="paper-authors">Solomon Eshun et al. · submitted 3 August 2026</p>
-          <p className="paper-abstract">
-            The paper proposes a seven-layer, vendor-agnostic architecture for guarded
-            self-healing. Verified outcomes enrich incident memory, while recurring
-            diagnosis-and-remediation patterns can be reviewed, tested, and promoted into
-            deterministic rules—a research direction rather than automatic learning in the current SDK.
-          </p>
+        <article className="paper" data-reveal="">
+          <div>
+            <span className="eyebrow">arXiv 2608.01955 · preprint</span>
+            <h3>Agentic Self-Healing for Data &amp; AI Pipelines: An Affordable Vendor-Agnostic Architecture using Open-Source Software</h3>
+            <p>Solomon Eshun et al. · August 2026. The broader architecture includes recovery and learning; the current SDK implements investigation only.</p>
+          </div>
           <div className="paper-actions">
-            <a className="paper-cta" href="https://arxiv.org/abs/2608.01955" target="_blank" rel="noreferrer">READ ON arXiv ↗</a>
-            <a className="paper-cta secondary" href="/research/agentic-self-healing-for-data-and-ai-pipelines.pdf" target="_blank" rel="noreferrer">DOWNLOAD PDF ↓</a>
+            <a className="button" href={PAPER} target="_blank" rel="noreferrer">Read on arXiv ↗</a>
+            <a className="button" href="/research/agentic-self-healing-for-data-and-ai-pipelines.pdf" target="_blank" rel="noreferrer">Download PDF</a>
           </div>
         </article>
       </div>
@@ -130,5 +223,19 @@ export function Research() {
 }
 
 export function Footer() {
-  return <footer className="site-footer dark-zone"><div className="shell footer-inner"><Brand /><p>Evidence-grounded operational intelligence.</p><div><Link href="/docs">Docs</Link><a href={REPO}>GitHub</a><a href="/llms.txt">llms.txt</a><a href={`${REPO}/blob/dev/LICENSE`}>Apache-2.0</a></div></div></footer>;
+  return (
+    <footer className="site-footer">
+      <div className="shell footer-inner">
+        <Brand />
+        <nav aria-label="Footer">
+          <Link href="/docs">Docs</Link>
+          <a href={REPO}>GitHub</a>
+          <a href={PYPI}>PyPI</a>
+          <a href={`${REPO}/blob/main/CHANGELOG.md`}>Changelog</a>
+          <a href="/llms.txt">llms.txt</a>
+          <a href={`${REPO}/blob/main/LICENSE`}>Apache-2.0</a>
+        </nav>
+      </div>
+    </footer>
+  );
 }

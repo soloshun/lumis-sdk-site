@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Brand, GitHubMark } from "./brand";
+import { Brand } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 
 const GITHUB = "https://github.com/soloshun/lumis-sdk";
-const PAPER = "https://arxiv.org/abs/2608.01955";
 
-function WorkInProgressBanner() {
+function StatusBanner() {
   return (
-    <aside className="wip-banner" role="status" aria-label="Experimental work in progress">
-      <strong>WORK IN PROGRESS · EXPERIMENTAL PREVIEW</strong>
-      <span>Published as a proof of concept. APIs, capabilities, and architecture may change.</span>
+    <aside className="wip-banner" role="status" aria-label="Project status">
+      <strong>Experimental · v0.1.0</strong>
+      <span>Research software. APIs may change. Evaluated on one reference estate so far.</span>
+      <Link href="/docs/evaluation">See the results →</Link>
     </aside>
   );
 }
@@ -41,20 +41,20 @@ export function SiteNav() {
   const hidden = useHideOnScroll();
   return (
     <>
-      <WorkInProgressBanner />
-      <header className={`site-nav scroll-header${hidden ? " is-hidden" : ""}`}>
+      <StatusBanner />
+      <header className={`site-nav${hidden ? " is-hidden" : ""}`}>
         <div className="shell nav-inner">
           <Brand />
           <nav className="nav-links" aria-label="Primary navigation">
-            <a href="#architecture">Architecture</a>
-            <a href="#workflow">Workflow</a>
-            <a href="#research">Research</a>
-            <a href="#community">Community</a>
+            <a href="#how">How it works</a>
+            <a href="#results">Results</a>
+            <a href="#start">Get started</a>
             <Link href="/docs">Documentation</Link>
           </nav>
-          <a className="nav-github" href={GITHUB} target="_blank" rel="noreferrer">
-            <GitHubMark /> GitHub <span aria-hidden="true">↗</span>
-          </a>
+          <div className="nav-tools">
+            <ThemeToggle />
+            <a className="nav-github" href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
+          </div>
         </div>
       </header>
     </>
@@ -64,14 +64,14 @@ export function SiteNav() {
 export function DocsNav() {
   return (
     <>
-      <WorkInProgressBanner />
+      <StatusBanner />
       <header className="docs-topbar">
         <div className="docs-topbar-inner">
           <Brand docs />
           <nav aria-label="Documentation utilities">
             <ThemeToggle />
-            <a href={PAPER} target="_blank" rel="noreferrer">Research ↗</a>
-            <Link href="/">SDK overview</Link>
+            <Link className="hide-sm" href="/">Home</Link>
+            <a className="hide-sm" href="https://pypi.org/project/lumis-sdk/" target="_blank" rel="noreferrer">PyPI ↗</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>
         </div>

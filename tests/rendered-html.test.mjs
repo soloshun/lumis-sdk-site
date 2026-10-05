@@ -43,46 +43,46 @@ test("browser-only theme initialization is scoped to the root hydration boundary
   }
 });
 
-test("homepage communicates the current investigation boundary and accurate source install", async () => {
+test("homepage states the current release, boundaries and honest results", async () => {
   const response = await render("/");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Operational intelligence/);
-  assert.match(html, /Grounded in evidence/);
-  assert.match(html, /Models propose/);
-  assert.match(html, /Lumis tests/);
-  assert.match(html, /--branch dev/);
-  assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
-  assert.match(html, /LUMIS PLATFORM · COMING SOON/);
-  assert.match(html, /unconfirmed_hypothesis/);
+  assert.match(html, /Incident investigation/);
+  assert.match(html, /grounded in evidence/);
+  assert.match(html, /pip install (&quot;|")lumis-sdk\[http,agent\]/);
+  assert.match(html, /Experimental · v0\.1\.0/);
+  assert.match(html, /supported_diagnosis/);
+  assert.match(html, /proof of concept, not a benchmark/);
+  assert.match(html, /id="how"/);
+  assert.match(html, /id="results"/);
   assert.match(html, /id="research"/);
   assert.match(html, /id="community"/);
-  assert.match(html, /Star on GitHub/);
-  assert.match(html, /DOWNLOAD PDF/);
+  assert.match(html, /solomon@qadimlabs\.com/);
+  assert.match(html, /Download PDF/);
   const paper = await render("/research/agentic-self-healing-for-data-and-ai-pipelines.pdf");
   assert.equal(paper.status, 200);
   assert.match(paper.headers.get("content-type"), /application\/pdf/);
-  assert.match(html, /Sample operational dependency graph/);
-  assert.match(html, /Evidence categories—not confidence scores/);
-  assert.doesNotMatch(html, /uv add lumis-sdk|13 RUNNABLE COOKBOOKS|softwareVersion|pypi.org|diagnose --config/);
+  assert.doesNotMatch(html, /--branch dev|COMING SOON|Discord|diagnose --config|13 RUNNABLE COOKBOOKS/);
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
-  assert.match(html, /<title>Lumis SDK: Evidence-Grounded Operational Intelligence<\/title>/);
+  assert.match(html, /<title>Lumis SDK: Evidence-Grounded Incident Investigation<\/title>/);
   assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/?"/);
   const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1]));
-  assert.ok(schemas.some(schema => schema["@graph"]?.some(item => item.codeRepository?.endsWith("/lumis-sdk"))));
+  const software = schemas.flatMap(schema => schema["@graph"] || []).find(item => item.codeRepository);
+  assert.ok(software?.codeRepository.endsWith("/lumis-sdk"));
+  assert.equal(software.softwareVersion, "0.1.0");
 });
 
-test("the original visual palette remains intact", async () => {
+test("the paper-and-teal palette is in use", async () => {
   const html = await (await render("/")).text();
   const sheets = [...html.matchAll(/href="([^"]+\.css(?:\?[^"]*)?)"/g)].map(match => match[1]);
   const css = (await Promise.all(sheets.map(async url => (await render(url)).text()))).join("\n");
-  assert.match(css, /--signal:\s*#2962ff/i);
-  assert.match(css, /--signal-soft:\s*#7aa2ff/i);
-  assert.doesNotMatch(css, /#245f5b|#9fbbb8|#263229/i);
+  assert.match(css, /--accent:\s*#0d7a6f/i);
+  assert.match(css, /--bg:\s*#f7f7f4/i);
+  assert.doesNotMatch(css, /#2962ff/i);
 });
 
-const pages = ["", "quickstart", "architecture", "investigation", "configuration", "connectors", "api", "safety", "project"];
-test("all nine documentation pages are server-rendered with unique canonicals and stable header", async () => {
+const pages = ["", "quickstart", "small-project", "how-it-works", "graph", "evidence", "triage", "investigator", "reports", "configuration", "connectors", "api", "models", "safety", "evaluation", "project"];
+test("all documentation pages are server-rendered with unique canonicals and the status banner", async () => {
   for (const slug of pages) {
     const path = `/docs${slug ? `/${slug}` : ""}`;
     const response = await render(path);
@@ -91,25 +91,28 @@ test("all nine documentation pages are server-rendered with unique canonicals an
     assert.match(html, /TechArticle/);
     assert.match(html, /BreadcrumbList/);
     assert.match(html, /class="docs-topbar"/);
-    assert.doesNotMatch(html, /docs-topbar scroll-header|PHASE 1/);
-    assert.match(html, /Toggle documentation color theme/);
+    assert.match(html, /Toggle color theme/);
     assert.match(html, /<details/);
-    assert.match(html, /WORK IN PROGRESS · EXPERIMENTAL PREVIEW/);
-    assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk-site.vercel.app${path}"`));
+    assert.match(html, /Experimental · v0\.1\.0/);
+    assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk-site.vercel.app${path}"`), path);
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, path);
     assert.match(html, /\/og/);
   }
 });
 
-test("current SDK details include change evidence, SQL, conflicting roots, and uncertainty", async () => {
-  const connectorHtml = await (await render("/docs/connectors")).text();
-  const investigationHtml = await (await render("/docs/investigation")).text();
-  assert.match(connectorHtml, /Recent changes as checkable evidence/);
-  assert.match(connectorHtml, /Read-only|read-only PostgreSQL/);
-  assert.match(connectorHtml, /ScalingReplicaSet/);
-  assert.match(investigationHtml, /Competing supported roots yield insufficient_evidence/);
-  assert.match(investigationHtml, /quality: degraded/);
-  assert.match(investigationHtml, /No|no|never/);
+test("docs cover change evidence, SQL, competing roots, missing data and the evaluation caveats", async () => {
+  const connectors = await (await render("/docs/connectors")).text();
+  const reports = await (await render("/docs/reports")).text();
+  const evidence = await (await render("/docs/evidence")).text();
+  const evaluation = await (await render("/docs/evaluation")).text();
+  assert.match(connectors, /Recent changes/);
+  assert.match(connectors, /Read-only SQL/);
+  assert.match(connectors, /ScalingReplicaSet/);
+  assert.match(reports, /insufficient_evidence/);
+  assert.match(reports, /competing roots listed|competing roots/);
+  assert.match(evidence, /Missing data is unknown, never zero/);
+  assert.match(evaluation, /ground-truth leak/);
+  assert.match(evaluation, /one model family/);
 });
 
 test("crawler discovery contains only the new current pages", async () => {
@@ -117,15 +120,15 @@ test("crawler discovery contains only the new current pages", async () => {
   const sitemap = await (await render("/sitemap.xml")).text();
   const manifest = await (await render("/manifest.webmanifest")).json();
   assert.match(robots, /Sitemap: https:\/\/lumis-sdk-site\.vercel\.app\/sitemap\.xml/);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, 10);
-  assert.match(sitemap, /2026-10-04/);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, pages.length + 1);
+  assert.match(sitemap, /2026-10-05/);
   for (const slug of pages.filter(Boolean)) assert.ok(sitemap.includes(`/docs/${slug}</loc>`));
   assert.doesNotMatch(sitemap, /lifecycle-contracts|project\/research|cookbooks/);
-  assert.match(manifest.name, /Operational Intelligence/);
+  assert.match(manifest.name, /Incident Investigation/);
 });
 
 test("legacy bookmarks permanently redirect without implying retired API support", async () => {
-  for (const [old, current] of [["getting-started/quickstart", "quickstart"], ["architecture/overview", "architecture"], ["concepts/healing-as-code", "project"], ["project/research", "project"], ["python-api/plugins", "project"], ["overview", ""]]) {
+  for (const [old, current] of [["getting-started/quickstart", "quickstart"], ["architecture/overview", "how-it-works"], ["concepts/healing-as-code", "project"], ["project/research", "project"], ["python-api/plugins", "project"], ["overview", ""], ["architecture", "how-it-works"], ["investigation", "investigator"]]) {
     const response = await render(`/docs/${old}`);
     assert.equal(response.status, 308, old);
     assert.equal(response.headers.get("location"), `/docs${current ? `/${current}` : ""}`);
@@ -136,12 +139,12 @@ test("legacy bookmarks permanently redirect without implying retired API support
 test("AI-readable documents use canonical URLs and the current SDK architecture", async () => {
   const index = await (await render("/llms.txt")).text();
   const full = await (await render("/llms-full.txt")).text();
-  assert.match(index, /evidence-grounded operational intelligence/);
+  assert.match(index, /evidence-grounded incident investigation/);
   assert.match(index, /YamlProject.handle_incident/);
   assert.match(index, /https:\/\/lumis-sdk-site\.vercel\.app\/docs\/quickstart/);
   assert.doesNotMatch(index, /127\.0\.0\.1|Python package:/);
   assert.match(full, /lumis.dev\/operational-v1alpha1/);
-  assert.match(full, /Recent changes as checkable evidence/);
+  assert.match(full, /Recent changes/);
   assert.match(full, /unconfirmed_hypothesis/);
   assert.doesNotMatch(full, /run_guarded_lifecycle|lumis.dev\/v1/);
 });
