@@ -10,7 +10,7 @@ export function Wordmark() {
 
 export function Brand({ docs = false }: { docs?: boolean }) {
   return (
-    <Link className="brand" href="/" aria-label="Lumis SDK home">
+    <Link className="brand" href={docs ? "/docs" : "/"} aria-label={docs ? "Lumis SDK documentation" : "Lumis SDK home"}>
       <Wordmark />
       <span className="brand-product">{docs ? "docs" : "sdk"}</span>
     </Link>
