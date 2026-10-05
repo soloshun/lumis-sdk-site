@@ -6,6 +6,7 @@ import { Brand } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
 
 const GITHUB = "https://github.com/soloshun/lumis-sdk";
+const LUMIS = "https://lumis.qadimlabs.com";
 
 function StatusBanner() {
   return (
@@ -53,6 +54,7 @@ export function SiteNav() {
           </nav>
           <div className="nav-tools">
             <ThemeToggle />
+            <a className="nav-github" href={LUMIS} target="_blank" rel="noreferrer">Lumis.com ↗</a>
             <a className="nav-github" href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
           </div>
         </div>
@@ -71,6 +73,7 @@ export function DocsNav() {
           <nav aria-label="Documentation utilities">
             <ThemeToggle />
             <Link className="hide-sm" href="/">Home</Link>
+            <a className="hide-sm" href={LUMIS} target="_blank" rel="noreferrer">Lumis.com ↗</a>
             <a className="hide-sm" href="https://pypi.org/project/lumis-sdk/" target="_blank" rel="noreferrer">PyPI ↗</a>
             <a href={GITHUB} target="_blank" rel="noreferrer">GitHub ↗</a>
           </nav>

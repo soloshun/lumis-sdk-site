@@ -6,6 +6,7 @@ const REPO = "https://github.com/soloshun/lumis-sdk";
 const PYPI = "https://pypi.org/project/lumis-sdk/";
 const RESEARCH_NOTES = "https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md";
 const PAPER = "https://arxiv.org/abs/2608.01955";
+const LUMIS = "https://lumis.qadimlabs.com";
 const INSTALL = 'pip install "lumis-sdk[http,agent]"';
 
 // The terminal check from docs/examples/small-project in the SDK repository (tested there).
@@ -205,6 +206,10 @@ export function Research() {
           <p className="eyebrow">Research</p>
           <h2>Where Lumis comes from.</h2>
           <p>Lumis grew out of research into guarded, vendor-neutral self-healing. The SDK narrows that work to the part that can be tested today: investigation.</p>
+          <div className="hero-actions" style={{ marginTop: 18 }}>
+            <a className="button" href={LUMIS} target="_blank" rel="noreferrer">Visit the Lumis website ↗</a>
+            <a className="button" href={`${LUMIS}/blog`} target="_blank" rel="noreferrer">Read the blog ↗</a>
+          </div>
         </div>
         <article className="paper" data-reveal="">
           <div>
@@ -228,6 +233,7 @@ export function Footer() {
       <div className="shell footer-inner">
         <Brand />
         <nav aria-label="Footer">
+          <a href={LUMIS}>Lumis.com</a>
           <Link href="/docs">Docs</Link>
           <a href={REPO}>GitHub</a>
           <a href={PYPI}>PyPI</a>
