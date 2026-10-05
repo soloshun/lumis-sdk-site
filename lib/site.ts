@@ -1,4 +1,4 @@
-const FALLBACK_ORIGIN = "https://lumis-sdk-site.vercel.app";
+const FALLBACK_ORIGIN = "https://lumis-sdk.vercel.app";
 
 function normalizeOrigin(value: string) {
   const withProtocol = value.startsWith("http://") || value.startsWith("https://")

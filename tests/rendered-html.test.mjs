@@ -68,7 +68,7 @@ test("homepage states the current release, boundaries and honest results", async
   assert.match(html, /proof of concept, under Apache-2\.0/);
   assert.equal((html.match(/<h1[ >]/g) || []).length, 1);
   assert.match(html, /<title>Lumis SDK: Evidence-Grounded Incident Investigation<\/title>/);
-  assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk-site\.vercel\.app\/?"/);
+  assert.match(html, /rel="canonical" href="https:\/\/lumis-sdk\.vercel\.app\/?"/);
   const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1]));
   const software = schemas.flatMap(schema => schema["@graph"] || []).find(item => item.codeRepository);
   assert.ok(software?.codeRepository.endsWith("/lumis-sdk"));
@@ -94,10 +94,11 @@ test("all documentation pages are server-rendered with unique canonicals and the
     assert.match(html, /TechArticle/);
     assert.match(html, /BreadcrumbList/);
     assert.match(html, /class="docs-topbar"/);
+    assert.match(html, /<a class="brand"[^>]*href="\/docs"/);
     assert.match(html, /Toggle color theme/);
     assert.match(html, /<details/);
     assert.match(html, /Experimental · v0\.1\.0/);
-    assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk-site.vercel.app${path}"`), path);
+    assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk.vercel.app${path}"`), path);
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, path);
     assert.match(html, /\/og/);
   }
@@ -122,7 +123,7 @@ test("crawler discovery contains only the new current pages", async () => {
   const robots = await (await render("/robots.txt")).text();
   const sitemap = await (await render("/sitemap.xml")).text();
   const manifest = await (await render("/manifest.webmanifest")).json();
-  assert.match(robots, /Sitemap: https:\/\/lumis-sdk-site\.vercel\.app\/sitemap\.xml/);
+  assert.match(robots, /Sitemap: https:\/\/lumis-sdk\.vercel\.app\/sitemap\.xml/);
   assert.equal((sitemap.match(/<loc>/g) || []).length, pages.length + 1);
   assert.match(sitemap, /2026-10-05/);
   for (const slug of pages.filter(Boolean)) assert.ok(sitemap.includes(`/docs/${slug}</loc>`));
@@ -144,7 +145,7 @@ test("AI-readable documents use canonical URLs and the current SDK architecture"
   const full = await (await render("/llms-full.txt")).text();
   assert.match(index, /evidence-grounded incident investigation/);
   assert.match(index, /YamlProject.handle_incident/);
-  assert.match(index, /https:\/\/lumis-sdk-site\.vercel\.app\/docs\/quickstart/);
+  assert.match(index, /https:\/\/lumis-sdk\.vercel\.app\/docs\/quickstart/);
   assert.doesNotMatch(index, /127\.0\.0\.1|Python package:/);
   assert.match(full, /lumis.dev\/operational-v1alpha1/);
   assert.match(full, /Recent changes/);

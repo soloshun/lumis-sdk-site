@@ -1,16 +1,28 @@
 # Lumis SDK website
 
-The home page and documentation for [Lumis SDK](https://github.com/soloshun/lumis-sdk), an experimental, open-source Python SDK for evidence-grounded incident investigation. Built with Next.js, React and TypeScript; deployed with Vercel's native Next.js build.
+The website and documentation for [Lumis SDK](https://github.com/soloshun/lumis-sdk), live at **[lumis-sdk.vercel.app](https://lumis-sdk.vercel.app)**:
 
-## Content truth
+- the home page at `/`;
+- the documentation at [`/docs`](https://lumis-sdk.vercel.app/docs).
 
-The site describes **`lumis-sdk` 0.1.0** as published on PyPI (5 October 2026). Every claim must hold for that release:
+Lumis SDK is an experimental Python SDK for evidence-grounded incident investigation. It is the open-source (Apache-2.0) proof of concept of Lumis' investigation core; other Lumis products and services are separate. The company site is [lumis.qadimlabs.com](https://lumis.qadimlabs.com).
 
-- **Read-only.** There is no remediation executor, no automatic rule learning and no hosted service.
+Built with Next.js 16, React 19 and TypeScript, and deployed on Vercel.
+
+## Content rules
+
+Everything on the site must be true of the published **`lumis-sdk` 0.1.0**:
+
+- **Read-only.** Lumis has no remediation executor, no automatic rule learning and no hosted service.
 - **Experimental.** APIs may change before 1.0.
-- **Evaluated on one estate.** The only live evaluation is the GridCast reference estate (15 injected failures) with one model, DeepSeek v4 pro. Numbers on the site are taken from the cookbook's research notes, exclude scenario N (a ground-truth leak), and always carry that caveat.
+- **Evaluated on one estate.** The only live evaluation is the GridCast reference estate: 15 injected failures, one model (DeepSeek v4 pro). Results come from the [research notes](https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md), exclude scenario N (a ground-truth leak), and always carry that caveat.
+- **Open source means the SDK only.** Do not write "built in the open", "built in public" or "no lock-in". The tests fail on those phrases.
 
-Sources: the SDK `README.md`, `docs/` and `CHANGELOG.md` on `main`, and `lumis-cookbooks/gridcast/docs/research-notes.md`. When the SDK changes, update `content/docs.ts`, the home page and `tests/rendered-html.test.mjs` together, and bump `CONTENT_UPDATED` in `lib/site.ts`.
+Sources of truth are the SDK's `README.md`, `docs/` and `CHANGELOG.md` on `main`. When the SDK changes, update these together and bump `CONTENT_UPDATED` in `lib/site.ts`:
+
+- the docs (`content/docs.ts`);
+- the home page;
+- the tests.
 
 ## Development
 
@@ -18,46 +30,48 @@ Use Node 22.x.
 
 ```sh
 npm ci
-npm run dev
+npm run dev          # http://localhost:3000
 npm run lint
 npx tsc --noEmit
-npm test
+npm test             # production build + smoke tests on port 4397
 ```
 
-`npm test` builds with native Next.js and smoke-tests the production server on port 4397. It checks:
+`npm test` builds the site and checks the production server. It covers:
 
-- the home page and all documentation pages;
-- the palette, metadata, structured data and the sitemap;
-- legacy redirects, the AI-readable files and the social image.
+- the home page and all 16 docs pages: status banner, canonical URLs and one `h1` each;
+- the palette, structured data, sitemap and robots;
+- legacy redirects, `llms.txt` / `llms-full.txt` and the social image;
+- the wording rules above.
 
-## Editing
+## Where things live
 
-| File | What it holds |
+| Path | Contents |
 |---|---|
-| `content/docs.ts` | The 16 documentation pages as typed blocks. Text supports `code`, **bold** and `[links](/docs/...)`; diagrams are Mermaid. |
-| `components/home-sections.tsx` | The home page sections. The hero YAML is the SDK's tested small-project example; keep it exact. |
-| `components/community.tsx` | Live GitHub stars and contributors; contact is by email (`solomon@qadimlabs.com`). |
-| `components/site-nav.tsx` | The status banner and the navigation bars. |
-| `app/globals.css` | The design system: paper and ink with one teal accent, in light and dark themes (`data-doc-theme`). |
-| `components/mermaid.tsx` | Diagram rendering. It waits for fonts and passes the resolved font family, so labels are measured correctly. |
-| `lib/site.ts` | Canonical origin, title, description and content date. |
+| `content/docs.ts` | All documentation pages as typed blocks, grouped into Start here, Concepts, Build and Project. Text supports `code`, **bold** and `[links](/docs/...)`; diagrams are Mermaid. |
+| `components/home-sections.tsx` | Home page sections. The hero YAML is the SDK's tested small-project example; keep it exact. |
+| `components/community.tsx` | Live GitHub stars and contributors, plus email contact (`solomon@qadimlabs.com`). |
+| `components/site-nav.tsx` | Status banner, home navigation and the docs top bar. |
+| `components/brand.tsx` | The wordmark. It links home on the home page and to `/docs` in the docs. |
+| `components/mermaid.tsx` | Diagram rendering. It waits for fonts and passes the resolved font family, so labels are not clipped. |
+| `app/globals.css` | Design system: paper and ink with one teal accent, light and dark via `data-doc-theme`. |
+| `app/docs/[[...slug]]/page.tsx` | Docs layout: sidebar, table of contents, "Copy as Markdown", previous and next. |
+| `app/icon.svg` | Tab icon: the Lumis symbol, shared with lumis.qadimlabs.com. |
 | `app/og/route.tsx` | The 1200×630 social image, generated from code. |
-| `next.config.ts` | Permanent redirects for retired and renamed documentation URLs. |
+| `lib/site.ts` | Canonical origin, title, description and content date. |
+| `next.config.ts` | Permanent redirects for retired and renamed docs URLs. |
 
-## Vercel and SEO
+## Deployment
 
-Select **Next.js** as the framework. Build with `npm run build` (or the checked-in `next build` override), and leave Output Directory at its Next.js default. Do not point Vercel at a Vite `dist` output. All active docs routes are prerendered; unknown pages return 404.
+Vercel builds `main` with the Next.js framework preset (`next build`, default output directory).
 
-Original Cloudflare, database, and starter-auth files remain untouched. The active Vercel scripts use native Next.js; `.openai/hosting.json` is historical resource metadata, not the active Vercel deployment configuration. No external resources were deleted.
+- **Canonical origin.** The order is `NEXT_PUBLIC_SITE_URL`, then `VERCEL_PROJECT_PRODUCTION_URL`, then `https://lumis-sdk.vercel.app`. It drives canonical URLs, the sitemap, JSON-LD, social metadata and `llms.txt`.
+- **Search verification.** Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` add verification tags.
+- **Preview builds.** Vercel previews are `noindex` and disallowed in `robots.txt`.
 
-Set `NEXT_PUBLIC_SITE_URL` to the final public origin (for example `https://sdk.example.com`) before building. `VERCEL_PROJECT_PRODUCTION_URL` is the fallback, followed by `https://lumis-sdk-site.vercel.app`. These drive canonical URLs, sitemap, JSON-LD, social metadata, and AI-readable links. Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` inject verification tags; registering Search Console and submitting the sitemap are separate owner actions.
+The Cloudflare, database and starter-auth files (`worker/`, `db/`, `drizzle/`, `examples/`) are unused leftovers from the original template and are not part of the Vercel build.
 
-Production metadata includes unique titles/descriptions/canonicals, WebSite and SoftwareApplication/SoftwareSourceCode JSON-LD, doc TechArticle/BreadcrumbList, robots, sitemap, manifest, and Open Graph/X cards. Vercel preview builds are marked noindex and robots-disallowed to avoid competing with production URLs. Retired API pages redirect to the project page rather than presenting old interfaces as current. Search rankings and indexing are not guaranteed.
+## Branches
 
-## Branch history and promotion
-
-- `legacy/pre-operational-intelligence-2026-10-04` preserves the old website (commit `34f4e2f`).
-- `dev` is where changes land.
-- `main` is promoted from `dev` after review.
-
-Promote through a reviewed `dev` → `main` change after verification. A pushed branch is not evidence of a Vercel production deployment. Legacy branch content should be used from a separate checkout, not combined with current SDK contracts.
+- `dev`: where changes land, through pull requests.
+- `main`: production. Promote from `dev` after review.
+- `legacy/pre-operational-intelligence-2026-10-04`: the original website, preserved.
