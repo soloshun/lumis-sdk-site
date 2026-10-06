@@ -4,6 +4,7 @@ import { setTimeout } from "node:timers/promises";
 import { after, before, test } from "node:test";
 import { readFile } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
+import ts from "typescript";
 
 const PORT = 4397;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -97,6 +98,10 @@ test("all documentation pages are server-rendered with unique canonicals and the
     assert.match(html, /<a class="brand"[^>]*href="\/docs"/);
     assert.match(html, /Toggle color theme/);
     assert.match(html, /<details/);
+    assert.match(html, /class="docs-picker-trigger"[^>]*aria-expanded="false"/);
+    assert.match(html, /class="docs-picker-value"/);
+    assert.doesNotMatch(html, /<select\b/);
+    assert.match(html, /aria-label="Search documentation" aria-keyshortcuts="Control\+K Meta\+K"/);
     assert.match(html, /Experimental · v0\.1\.0/);
     assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk.vercel.app${path}"`), path);
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, path);
@@ -117,6 +122,46 @@ test("docs cover change evidence, SQL, competing roots, missing data and the eva
   assert.match(evidence, /Missing data is unknown, never zero/);
   assert.match(evaluation, /ground-truth leak/);
   assert.match(evaluation, /one model family/);
+});
+
+test("the custom responsive page picker identifies the current page and starts collapsed", async () => {
+  for (const [slug, group, label] of [["evaluation", "Project", "Evaluation: GridCast"], ["quickstart", "Start here", "Quickstart"], ["safety", "Build", "Safety and limits"]]) {
+    const html = await (await render(`/docs/${slug}`)).text();
+    assert.match(html, /class="docs-picker-trigger"[^>]*aria-expanded="false"[^>]*aria-controls=/);
+    assert.ok(html.includes(`<small>${group}</small><strong>${label}</strong>`), slug);
+    assert.doesNotMatch(html, /<select\b|<option\b/);
+    assert.doesNotMatch(html, /class="docs-picker-panel"/);
+  }
+});
+
+test("documentation search indexes pages, sections and API text with local section links", async () => {
+  const response = await render("/docs-search.json");
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("x-robots-tag"), "noindex");
+  const entries = await response.json();
+  assert.equal(entries.filter((entry) => !entry.href.includes("#")).length, pages.length);
+  assert.ok(entries.some((entry) => entry.href === "/docs/evaluation#reading-grade-cards"));
+  assert.ok(entries.some((entry) => entry.text.includes("YamlProject.handle_incident")));
+  assert.ok(entries.every((entry) => entry.href.startsWith("/docs") && entry.id && entry.title && entry.group));
+
+  const source = await readFile(new URL("../lib/docs-search.ts", import.meta.url), "utf8");
+  const compiled = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022}}).outputText;
+  const { searchDocumentation, searchExcerpt } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+  const grades = searchDocumentation(entries, "Grade Cards");
+  assert.equal(grades[0].href, "/docs/evaluation#reading-grade-cards");
+  assert.ok(searchDocumentation(entries, "supported_diagnosis").length);
+  assert.deepEqual(searchDocumentation(entries, "qzxnotarealdoc"), []);
+  assert.deepEqual(searchDocumentation(entries, "[[[]"), []);
+  const multiTerm = searchDocumentation(entries, "vendor timeout");
+  assert.ok(multiTerm.length);
+  assert.ok(multiTerm.every((entry) => ["vendor", "timeout"].every((term) => `${entry.title} ${entry.page} ${entry.group} ${entry.text}`.toLowerCase().includes(term))));
+  const defaults = searchDocumentation(entries, "");
+  assert.ok(defaults.every((entry) => !entry.href.includes("#")));
+  const repeated = searchDocumentation(entries, "evidence");
+  for (const entry of repeated) assert.ok(repeated.filter((item) => item.href.split("#")[0] === entry.href.split("#")[0]).length <= 2);
+  const excerpt = searchExcerpt(`${"word ".repeat(60)}test_token ${"end ".repeat(60)}`, "test_token");
+  assert.ok(excerpt.includes("test_token"));
+  assert.ok(excerpt.length <= 192);
 });
 
 test("crawler discovery contains only the new current pages", async () => {
