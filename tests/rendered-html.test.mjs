@@ -151,6 +151,7 @@ test("evaluation adds protocol, verification and decoy diagrams without linking 
   assert.doesNotMatch(html, /href="[^"\s]*\/blog\//);
   const full = await (await render("/llms-full.txt")).text();
   assert.match(full, /## Reading the grade cards/);
+  assert.match(full, /Across all 15 scenarios, verification reduced the one-call system/);
   assert.match(full, /## A recent release is not automatically the cause/);
   assert.match(full, /```mermaid\nflowchart TD\n    HIST/);
 });

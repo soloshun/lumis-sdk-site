@@ -756,11 +756,11 @@ export const docs: DocPage[] = [
       {id: "reading-grade-cards", title: "Reading the grade cards", blocks: [
         p("**A correct lead is not the same as an accepted conclusion.** Top-1 diagnosis accuracy asks whether the first-ranked component and mechanism are right, even if the system abstains. Conclusion precision asks how often an accepted conclusion is right. Component-only recall is weaker: the alert may already name the service that hurts, without revealing why."),
         diagram(`flowchart TD
-    DRAFT["One evidence-fed completion<br/>9 conclusions · 8 correct<br/>top-1 diagnosis: 0.50"]
+    DRAFT["Evidence-fed one-call baseline<br/>9 conclusions · 8 correct<br/>top-1 diagnosis: 0.50"]
     FETCH["Fetch named evidence<br/>check predictions and falsifiers<br/>no new model call"]
     VERIFIED["After verification<br/>3 conclusions · 3 correct<br/>top-1 diagnosis: 0.50"]
     DRAFT --> FETCH --> VERIFIED`, "Verification comparison: all 15 scenarios, two model runs each. These two rungs had no access to the leaked source file."),
-        p("Verification made the one-call system more cautious, not more accurate at finding the cause. Excluding N, both versions score 0.54 overall and 2 / 8 on the hard set. Checking a proposed explanation cannot supply an explanation the model never considered; the investigator's additional queries and change-record reads are a separate capability."),
+        p("Across all 15 scenarios, verification reduced the one-call system from nine conclusions (eight correct) to three (all correct), while top-1 diagnosis accuracy stayed at 0.50. Excluding N, both versions score 0.54 overall and 2 / 8 on the hard set. Checking a proposed explanation cannot supply an explanation the model never considered; the investigator's additional queries and change-record reads are a separate capability."),
         p("The grades use a published, per-scenario regex rubric for mechanisms, rather than independent human causal adjudication. Mechanical support means that a hypothesis survives checks against collected observations; it is not proof that those observations are reliable or that the proposed cause is uniquely true."),
       ]},
       {id: "decoy-release", title: "A recent release is not automatically the cause", blocks: [
