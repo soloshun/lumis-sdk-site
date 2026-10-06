@@ -125,10 +125,35 @@ test("crawler discovery contains only the new current pages", async () => {
   const manifest = await (await render("/manifest.webmanifest")).json();
   assert.match(robots, /Sitemap: https:\/\/lumis-sdk\.vercel\.app\/sitemap\.xml/);
   assert.equal((sitemap.match(/<loc>/g) || []).length, pages.length + 1);
-  assert.match(sitemap, /2026-10-05/);
+  assert.match(sitemap, /2026-10-06/);
   for (const slug of pages.filter(Boolean)) assert.ok(sitemap.includes(`/docs/${slug}</loc>`));
   assert.doesNotMatch(sitemap, /lifecycle-contracts|project\/research|cookbooks/);
   assert.match(manifest.name, /Incident Investigation/);
+});
+
+test("evaluation adds protocol, verification and decoy diagrams without linking to the article", async () => {
+  const html = await (await render("/docs/evaluation")).text();
+  for (const id of ["setup", "systems", "results", "reading-grade-cards", "decoy-release", "wrong", "limits"]) {
+    assert.ok(html.includes(`id="${id}"`), id);
+  }
+  assert.equal((html.match(/class="doc-diagram"/g) || []).length, 3);
+  assert.match(html, /ground truth enters scoring, never the investigation input/);
+  assert.match(html, /no new model call/);
+  assert.match(html, /Top-1 diagnosis accuracy/);
+  assert.match(html, /Conclusion precision/);
+  assert.match(html, /9 conclusions · 8 correct/);
+  assert.match(html, /3 conclusions · 3 correct/);
+  assert.match(html, /not a proven causal chain/);
+  assert.match(html, /no query into the vendor/);
+  assert.match(html, /21 times/);
+  assert.match(html, /Thirteen SDK defects/);
+  assert.match(html, /clean rerun of N/);
+  assert.doesNotMatch(html, /href="[^"\s]*\/blog\//);
+  const full = await (await render("/llms-full.txt")).text();
+  assert.match(full, /## Reading the grade cards/);
+  assert.match(full, /Across all 15 scenarios, verification reduced the one-call system/);
+  assert.match(full, /## A recent release is not automatically the cause/);
+  assert.match(full, /```mermaid\nflowchart TD\n    HIST/);
 });
 
 test("legacy bookmarks permanently redirect without implying retired API support", async () => {

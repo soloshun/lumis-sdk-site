@@ -717,6 +717,15 @@ export const docs: DocPage[] = [
       {id: "setup", title: "The estate and the protocol", blocks: [
         p(`GridCast is an open reference estate we built for this purpose: a synthetic electricity-demand forecaster with ten services on Kubernetes (kind), Prometheus, Loki, Tempo, Prefect and PostgreSQL, external weather and telemetry vendors, and changes made through GitOps. We injected fifteen different failures through ordinary channels (releases, configuration, rotated secrets, resource limits, a model promotion, vendor outages and silent data problems). Five of them were added later, specifically to be hard. Everything is public in the [GridCast cookbook](${COOKBOOKS}).`),
         p("For each failure the estate's own alerts opened one incident, which was then frozen: every system answered the same incident with the same evidence window. The ground truth was read only after all reports existed. A run counts as correct only if its top answer names the right component and the right mechanism."),
+        p("The harness waited for a quiet estate and a 20-minute cooldown before injecting each fault. After the first fresh alert, it allowed 120 seconds to settle, then pinned queries to one window: ten minutes before that alert through the freeze time. Model systems ran twice per scenario; rules ran five times. This controls the incident context, not every source of model or provider variability."),
+        diagram(`flowchart TD
+    ALERT["Inject fault → estate alert<br/>wait 120 seconds"]
+    FREEZE["Freeze one incident<br/>same alerts, entities and time window"]
+    RUN["Run each comparison system<br/>queries pinned to that window"]
+    REPORT["Save every report"]
+    TRUTH["Unseal ground truth<br/>only after reports exist"]
+    SCORE["Score the top-ranked answer<br/>component AND mechanism"]
+    ALERT --> FREEZE --> RUN --> REPORT --> TRUTH --> SCORE`, "Evaluation protocol: ground truth enters scoring, never the investigation input."),
       ]},
       {id: "systems", title: "What was compared", blocks: [
         table(["System", "What it gets"], [
@@ -727,6 +736,7 @@ export const docs: DocPage[] = [
           ["Lumis", "Triage, then the investigator, then mechanical assessment."],
         ]),
         p("Every model-based system used the same model: DeepSeek v4 pro through OpenRouter, reasoning effort high."),
+        p("The full ladder includes one additional rung: **one call plus verification**. It reuses the single-call answers, then Lumis fetches the registered query IDs each hypothesis names and checks predictions and falsifiers, with no new model call. The original one-call baseline is already partly checked, but only against its pre-collected facts (about 16–20 observations). This extra rung separates verification from the investigator's ability to ask a new question."),
       ]},
       {id: "results", title: "Results", blocks: [
         table(["", "Rules only", "Model, alert only", "Model + graph", "One call with evidence", "Lumis"], [
@@ -743,6 +753,31 @@ export const docs: DocPage[] = [
           "**A capable model with raw tools matched Lumis on the one clean scenario we could compare** (2 / 2 each), but needed about twice the tool calls and model requests, and its answer was unchecked free text.",
         ),
       ]},
+      {id: "reading-grade-cards", title: "Reading the grade cards", blocks: [
+        p("**A correct lead is not the same as an accepted conclusion.** Top-1 diagnosis accuracy asks whether the first-ranked component and mechanism are right, even if the system abstains. Conclusion precision asks how often an accepted conclusion is right. Component-only recall is weaker: the alert may already name the service that hurts, without revealing why."),
+        diagram(`flowchart TD
+    DRAFT["Evidence-fed one-call baseline<br/>9 conclusions · 8 correct<br/>top-1 diagnosis: 0.50"]
+    FETCH["Fetch named evidence<br/>check predictions and falsifiers<br/>no new model call"]
+    VERIFIED["After verification<br/>3 conclusions · 3 correct<br/>top-1 diagnosis: 0.50"]
+    DRAFT --> FETCH --> VERIFIED`, "Verification comparison: all 15 scenarios, two model runs each. These two rungs had no access to the leaked source file."),
+        p("Across all 15 scenarios, verification reduced the one-call system from nine conclusions (eight correct) to three (all correct), while top-1 diagnosis accuracy stayed at 0.50. Excluding N, both versions score 0.54 overall and 2 / 8 on the hard set. Checking a proposed explanation cannot supply an explanation the model never considered; the investigator's additional queries and change-record reads are a separate capability."),
+        p("The grades use a published, per-scenario regex rubric for mechanisms, rather than independent human causal adjudication. Mechanical support means that a hypothesis survives checks against collected observations; it is not proof that those observations are reliable or that the proposed cause is uniquely true."),
+      ]},
+      {id: "decoy-release", title: "A recent release is not automatically the cause", blocks: [
+        p("In scenario L, a harmless logging-only release preceded a telemetry historian silently stopping its demand exports. There were no errors. The graph helps distinguish the downstream symptom from an upstream dependency; the recent release is a candidate to test, not a reason to skip that investigation."),
+        diagram(`flowchart TD
+    HIST["Grid telemetry<br/>historian<br/>exports stop"]
+    ING["Ingestion"]
+    DB[("PostgreSQL")]
+    FEATURE["Feature<br/>service"]
+    PIPE["Forecast pipeline<br/>downstream alert"]
+    HIST -->|serves| ING
+    DB -->|serves| ING
+    DB -->|serves| FEATURE
+    FEATURE -->|serves| PIPE`, "Scenario L: a subset of the exported operational graph. Arrows mean provider serves consumer, not a proven causal chain."),
+        p("The graph-only model and Lumis each found the correct diagnosis in both L runs. In the Lumis run that saw the decoy release, that release was not part of the conclusion. Lumis still could not establish **why** the historian stopped: no query into the vendor's internals was available. A useful report keeps that boundary visible."),
+        p("Scenario K shows another distinction: both Lumis runs found a timeout lowered to 2 seconds while the vendor responded in about 4 seconds, and neither concluded. One ranked the configuration change first; the other ranked the vendor first. The strict grade is 1 / 2, even though both reports contained the relevant change for a person to review."),
+      ]},
       {id: "wrong", title: "What went wrong", blocks: [
         list(
           "**Our estate produced false alerts in the first run.** Two processes shared one telemetry identity and corrupted rate calculations. We fixed the estate and re-ran everything.",
@@ -751,10 +786,12 @@ export const docs: DocPage[] = [
           "**Rubric revisions.** The regex rubric that scores mechanisms was revised twice after we inspected outputs; each revision applied to every system.",
           "**Thirteen SDK defects**, from redaction masking decimals to a routing parameter that broke one provider, were found and fixed during the integration. They are the bulk of what changed before 0.1.0.",
         ),
+        p("For important mechanisms, use independent signals where possible. A fresh metric series reporting zero should not silently stand in for an observed zero; corroborate it with a separate measurement. More reasoning over the same faulty observation does not repair the sensor."),
       ]},
       {id: "limits", title: "Limits", blocks: [
         note("Read these numbers as a proof of concept", "One synthetic estate whose code and scenarios were written by the same team, one model family, two runs per system per scenario. GPT, Claude, Gemini and Grok models were not tested. Stronger models may raise every rung, including the alert-only baseline.", "amber"),
         p(`Every number, transcript and correction is in the [research notes](${RESEARCH_NOTES}). The estate, harness and evaluation were built with AI assistance (Claude Opus 5.5); the research design and most scenarios came from the author. Claude was not one of the systems evaluated.`),
+        p("There is no human baseline, and the mechanism labels still need human verification. With N excluded, one model outcome changes the overall score by about 3.6 percentage points (1 / 28). A clean rerun of N, other model families and independently reviewed labels are next checks, not completed results."),
       ]},
     ],
   },
