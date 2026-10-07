@@ -26,6 +26,7 @@ export function DocsSearch() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const resultsRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -76,6 +77,12 @@ export function DocsSearch() {
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // Search inputs normally consume Escape to clear their value; here it closes the dialog.
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch();
+      return;
+    }
     if (!results.length) return;
     if (event.key === "Enter") {
       event.preventDefault();
@@ -94,6 +101,14 @@ export function DocsSearch() {
       <SearchIcon /><span>Search</span><kbd>{isMac ? "⌘" : "Ctrl"} K</kbd>
     </button>
     <dialog className="docs-search-dialog" ref={dialogRef} aria-label="Search documentation" aria-modal="true"
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        if (event.shiftKey && document.activeElement === inputRef.current) {
+          event.preventDefault(); closeRef.current?.focus();
+        } else if (!event.shiftKey && document.activeElement === closeRef.current) {
+          event.preventDefault(); inputRef.current?.focus();
+        }
+      }}
       onClose={() => {
         setOpen(false); setQuery(""); setActive(0); setFailed(false);
         const target = previousFocus.current;
@@ -107,7 +122,7 @@ export function DocsSearch() {
             aria-controls={resultsId} aria-activedescendant={results.length ? `${id}-result-${activeIndex}` : undefined}
             placeholder="Search the documentation…" autoComplete="off" spellCheck={false} maxLength={120} value={query}
             onChange={(event) => { setQuery(event.target.value); setActive(0); }} onKeyDown={onKeyDown} />
-          <button type="button" className="docs-search-close" aria-label="Close search" onClick={closeSearch}>Esc</button>
+          <button ref={closeRef} type="button" className="docs-search-close" aria-label="Close search" onClick={closeSearch}>Esc</button>
         </div>
         <div className="docs-search-results">
           <p className="docs-search-status" aria-live="polite">
