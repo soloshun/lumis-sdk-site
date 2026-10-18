@@ -4,7 +4,7 @@ import { Community } from "@/components/community";
 import { ScrollFX } from "@/components/scroll-fx";
 import { JsonLd } from "@/components/json-ld";
 import { SiteNav } from "@/components/site-nav";
-import { absoluteUrl, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/site";
+import { absoluteUrl, LUMIS_ORGANIZATION, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/site";
 import { SDK_VERSION } from "@/content/docs";
 
 export const metadata: Metadata = {
@@ -21,7 +21,10 @@ const schema = {
       runtimePlatform: "Python 3.11+", isAccessibleForFree: true, license: "https://www.apache.org/licenses/LICENSE-2.0", codeRepository: "https://github.com/soloshun/lumis-sdk",
       downloadUrl: "https://pypi.org/project/lumis-sdk/", softwareVersion: SDK_VERSION, developmentStatus: "Experimental", sameAs: ["https://github.com/soloshun/lumis-sdk", "https://pypi.org/project/lumis-sdk/"],
       author: { "@type": "Person", name: "Solomon Eshun", url: "https://github.com/soloshun" },
+      publisher: { "@id": LUMIS_ORGANIZATION["@id"] },
+      image: absoluteUrl("/og"),
     },
+    LUMIS_ORGANIZATION,
   ],
 };
 

@@ -21,6 +21,16 @@ export const CONTENT_UPDATED = "2026-10-06";
 export const SOCIAL_IMAGE = { url: "/og", width: 1200, height: 630, alt: "Lumis SDK — incident investigation, grounded in evidence" };
 export const IS_PREVIEW = process.env.VERCEL_ENV === "preview";
 
+/** Lumis, as lumis.qadimlabs.com declares it (same @id), so search engines connect the SDK to the company site. */
+export const LUMIS_ORGANIZATION = {
+  "@type": "Organization",
+  "@id": "https://lumis.qadimlabs.com#organization",
+  name: "Lumis",
+  legalName: "Qadim Labs",
+  url: "https://lumis.qadimlabs.com",
+  logo: "https://lumis.qadimlabs.com/brand/lumis-icon-512.png",
+};
+
 export function absoluteUrl(path = "/") {
   return new URL(path, SITE_URL).toString();
 }
