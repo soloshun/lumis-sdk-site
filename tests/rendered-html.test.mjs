@@ -85,7 +85,7 @@ test("the paper-and-teal palette is in use", async () => {
   assert.doesNotMatch(css, /#2962ff/i);
 });
 
-const pages = ["", "quickstart", "small-project", "how-it-works", "graph", "evidence", "triage", "investigator", "reports", "configuration", "connectors", "api", "models", "safety", "evaluation", "project"];
+const pages = ["", "quickstart", "small-project", "how-it-works", "graph", "evidence", "triage", "investigator", "reports", "configuration", "connectors", "api", "models", "safety", "evaluation", "unreleased-maintenance", "project"];
 test("all documentation pages are server-rendered with unique canonicals and the status banner", async () => {
   for (const slug of pages) {
     const path = `/docs${slug ? `/${slug}` : ""}`;
@@ -124,6 +124,31 @@ test("docs cover change evidence, SQL, competing roots, missing data and the eva
   assert.match(evaluation, /one model family/);
 });
 
+test("unreleased maintenance has its own channel without changing the published install", async () => {
+  const html = await (await render("/docs/unreleased-maintenance")).text();
+  assert.match(html, /Unreleased · SDK dev/);
+  assert.match(html, /Unreleased development snapshot/);
+  assert.match(html, /not features available in that package/);
+  assert.match(html, /next release version and date are not assigned/);
+  assert.match(html, /64237434c754a17e0eb9625e84cfc606f3307e08/);
+  assert.match(html, /BedrockConverseModel/);
+  assert.match(html, /cached_from/);
+  assert.match(html, /assessments_truncated/);
+  assert.match(html, /investigate_incident/);
+  assert.match(html, /report\.markdown\(\)/);
+  assert.match(html, /247 local tests passed/);
+  assert.match(html, /not an independent model-quality study/);
+  assert.match(html, /Still open: operator-approved Bedrock/);
+  assert.match(html, /Do not publish changed code again as 0\.1\.0/);
+  const quickstart = await (await render("/docs/quickstart")).text();
+  assert.doesNotMatch(quickstart, /agent,bedrock|--format markdown|investigate_incident/);
+  const models = await (await render("/docs/models")).text();
+  assert.match(models, /four providers in PyPI 0\.1\.0/);
+  assert.match(models, /href="\/docs\/unreleased-maintenance#provider-integrations"/);
+  assert.match(models, /github\.com\/soloshun\/lumis-sdk\/blob\/v0\.1\.0\/docs\/models\.md/);
+  assert.doesNotMatch(models, /<code>bedrock<\/code>/);
+});
+
 test("the custom responsive page picker identifies the current page and starts collapsed", async () => {
   for (const [slug, group, label] of [["evaluation", "Project", "Evaluation: GridCast"], ["quickstart", "Start here", "Quickstart"], ["safety", "Build", "Safety and limits"]]) {
     const html = await (await render(`/docs/${slug}`)).text();
@@ -142,6 +167,7 @@ test("documentation search indexes pages, sections and API text with local secti
   assert.equal(entries.filter((entry) => !entry.href.includes("#")).length, pages.length);
   assert.ok(entries.some((entry) => entry.href === "/docs/evaluation#reading-grade-cards"));
   assert.ok(entries.some((entry) => entry.text.includes("YamlProject.handle_incident")));
+  assert.ok(entries.some((entry) => entry.href === "/docs/unreleased-maintenance#provider-integrations" && entry.text.includes("BedrockConverseModel")));
   assert.ok(entries.every((entry) => entry.href.startsWith("/docs") && entry.id && entry.title && entry.group));
 
   const source = await readFile(new URL("../lib/docs-search.ts", import.meta.url), "utf8");
@@ -170,7 +196,7 @@ test("crawler discovery contains only the new current pages", async () => {
   const manifest = await (await render("/manifest.webmanifest")).json();
   assert.match(robots, /Sitemap: https:\/\/lumis-sdk\.vercel\.app\/sitemap\.xml/);
   assert.equal((sitemap.match(/<loc>/g) || []).length, pages.length + 1);
-  assert.match(sitemap, /2026-10-06/);
+  assert.match(sitemap, /2026-10-18/);
   for (const slug of pages.filter(Boolean)) assert.ok(sitemap.includes(`/docs/${slug}</loc>`));
   assert.doesNotMatch(sitemap, /lifecycle-contracts|project\/research|cookbooks/);
   assert.match(manifest.name, /Incident Investigation/);
@@ -216,10 +242,14 @@ test("AI-readable documents use canonical URLs and the current SDK architecture"
   assert.match(index, /evidence-grounded incident investigation/);
   assert.match(index, /YamlProject.handle_incident/);
   assert.match(index, /https:\/\/lumis-sdk\.vercel\.app\/docs\/quickstart/);
+  assert.match(index, /Release boundary: Published installation guides describe PyPI 0\.1\.0/);
+  assert.match(index, /Do not use its APIs or extras as published-0\.1\.0 examples/);
   assert.doesNotMatch(index, /127\.0\.0\.1|Python package:/);
   assert.match(full, /lumis.dev\/operational-v1alpha1/);
   assert.match(full, /Recent changes/);
   assert.match(full, /unconfirmed_hypothesis/);
+  assert.match(full, /Unreleased development snapshot 64237434c754a17e0eb9625e84cfc606f3307e08/);
+  assert.match(full, /must not be read as part of the published-0\.1\.0 API/);
   assert.doesNotMatch(full, /run_guarded_lifecycle|lumis.dev\/v1/);
 });
 

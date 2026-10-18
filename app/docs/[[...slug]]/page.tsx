@@ -102,7 +102,7 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
             <h1>{page.title}</h1>
             <p>{page.description}</p>
             <div className="docs-page-meta">
-              <span>v{SDK_VERSION} · experimental</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
+              <span>{page.channel === "unreleased" ? "Unreleased · SDK dev" : `v${SDK_VERSION} · experimental`}</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
               <CopyMarkdown markdown={toMarkdown(page)} />
             </div>
           </header>
