@@ -55,9 +55,9 @@ npm test             # production build + smoke tests on port 4397
 | `components/mermaid.tsx` | Diagram rendering. It waits for fonts and passes the resolved font family, so labels are not clipped. |
 | `app/globals.css` | Design system: paper and ink with one teal accent, light and dark via `data-doc-theme`. |
 | `app/docs/[[...slug]]/page.tsx` | Docs layout: sidebar, table of contents, "Copy as Markdown", previous and next. |
-| `app/icon.svg` | Tab icon: the Lumis symbol, shared with lumis.qadimlabs.com. |
-| `app/og/route.tsx` | The 1200×630 social image, generated from code. |
-| `lib/site.ts` | Canonical origin, title, description and content date. |
+| `app/icon.svg`, `public/favicon.ico`, `public/icon-*.png`, `public/apple-touch-icon.png` | Tab and home-screen icons: the Lumis symbol in white on charcoal, shared with lumis.qadimlabs.com (generated there by `scripts/render-icons.mjs`). |
+| `app/og/route.tsx`, `app/og/[slug]/route.tsx`, `lib/og-card.tsx` | The 1200×630 social images, generated from code: the home card, and one card per docs page with its title and summary. |
+| `lib/site.ts` | Canonical origin, title, description, content date, and the Lumis organisation (the same `@id` as lumis.qadimlabs.com) used as publisher in JSON-LD. |
 | `next.config.ts` | Permanent redirects for retired and renamed docs URLs. |
 
 ## Deployment
@@ -65,7 +65,7 @@ npm test             # production build + smoke tests on port 4397
 Vercel builds `main` with the Next.js framework preset (`next build`, default output directory).
 
 - **Canonical origin.** The order is `NEXT_PUBLIC_SITE_URL`, then `VERCEL_PROJECT_PRODUCTION_URL`, then `https://lumis-sdk.vercel.app`. It drives canonical URLs, the sitemap, JSON-LD, social metadata and `llms.txt`.
-- **Search verification.** Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` add verification tags.
+- **Search verification.** Optional `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` add verification tags. A `vercel.app` address cannot be verified through DNS: in Search Console add a URL-prefix property for `https://lumis-sdk.vercel.app/`, choose the HTML tag method, put the tag's `content` value in `GOOGLE_SITE_VERIFICATION` (Production), and redeploy.
 - **Preview builds.** Vercel previews are `noindex` and disallowed in `robots.txt`.
 
 The Cloudflare, database and starter-auth files (`worker/`, `db/`, `drizzle/`, `examples/`) are unused leftovers from the original template and are not part of the Vercel build.

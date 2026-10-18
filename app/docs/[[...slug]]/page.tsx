@@ -10,7 +10,7 @@ import { MobileDocSelect } from "@/components/mobile-doc-select";
 import { DocsNav } from "@/components/site-nav";
 import { SDK_VERSION, docs, getAdjacentDoc, getDoc, groups, toMarkdown, type DocBlock } from "@/content/docs";
 import { highlightCode } from "@/lib/highlight";
-import { absoluteUrl, CONTENT_UPDATED, SOCIAL_IMAGE } from "@/lib/site";
+import { absoluteUrl, CONTENT_UPDATED, LUMIS_ORGANIZATION } from "@/lib/site";
 
 export function generateStaticParams() {
   return [{ slug: [] }, ...docs.filter((page) => page.slug !== "overview").map((page) => ({ slug: page.slug.split("/") }))];
@@ -21,6 +21,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
   const page = getDoc(slug);
   if (!page) return {};
   const path = page.slug === "overview" ? "/docs" : `/docs/${page.slug}`;
+  // Each page's own share card (app/og/[slug]), so a shared docs link names its page.
+  const image = { url: `/og/${page.slug}`, width: 1200, height: 630, alt: `${page.title}: Lumis SDK documentation` };
   return {
     title: page.title,
     description: page.description,
@@ -32,13 +34,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug?: st
       description: page.description,
       siteName: "Lumis SDK",
       locale: "en_US",
-      images: [SOCIAL_IMAGE],
+      images: [image],
     },
     twitter: {
       card: "summary_large_image",
       title: `${page.title} | Lumis SDK Documentation`,
       description: page.description,
-      images: [SOCIAL_IMAGE],
+      images: [image],
     },
   };
 }
@@ -66,11 +68,12 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         description: page.description,
         url: pageUrl,
         mainEntityOfPage: pageUrl,
+        image: { "@type": "ImageObject", url: absoluteUrl(`/og/${page.slug}`), width: 1200, height: 630 },
         inLanguage: "en",
         isAccessibleForFree: true,
         dateModified: CONTENT_UPDATED,
         author: { "@type": "Person", name: "Solomon Eshun", url: "https://github.com/soloshun" },
-        publisher: { "@type": "Organization", name: "Qadim Labs" },
+        publisher: LUMIS_ORGANIZATION,
         isPartOf: { "@type": "WebSite", name: "Lumis SDK", url: absoluteUrl("/") },
         about: ["operational intelligence", "evidence-grounded incident investigation", "bounded investigation", page.group],
       },

@@ -105,8 +105,32 @@ test("all documentation pages are server-rendered with unique canonicals and the
     assert.match(html, /Experimental · v0\.1\.0/);
     assert.ok(html.includes(`rel="canonical" href="https://lumis-sdk.vercel.app${path}"`), path);
     assert.equal((html.match(/<h1[ >]/g) || []).length, 1, path);
-    assert.match(html, /\/og/);
+    // Each page shares its own card, and names Lumis (the same entity as lumis.qadimlabs.com) as publisher.
+    const card = `/og/${slug || "overview"}`;
+    assert.ok(html.includes(`property="og:image" content="https://lumis-sdk.vercel.app${card}"`), path);
+    assert.ok(html.includes(`name="twitter:image" content="https://lumis-sdk.vercel.app${card}"`), path);
+    assert.match(html, /"@id":"https:\/\/lumis\.qadimlabs\.com#organization"/);
+    const image = await render(card);
+    assert.equal(image.status, 200, card);
+    assert.match(image.headers.get("content-type"), /image\/png/, card);
   }
+});
+
+test("the tab icon ships as ICO, SVG and PNG, with a home-screen icon and a manifest", async () => {
+  const html = await (await render("/")).text();
+  assert.match(html, /<link rel="icon" href="\/favicon\.ico" sizes="48x48"/);
+  assert.match(html, /<link rel="icon" href="\/icon-192\.png" type="image\/png" sizes="192x192"/);
+  assert.match(html, /<link rel="apple-touch-icon" href="\/apple-touch-icon\.png" sizes="180x180"/);
+  assert.match(html, /"publisher":\{"@id":"https:\/\/lumis\.qadimlabs\.com#organization"\}/);
+  for (const [path, type] of [["/favicon.ico", /icon/], ["/icon.svg", /svg/], ["/icon-192.png", /png/], ["/apple-touch-icon.png", /png/]]) {
+    const response = await render(path);
+    assert.equal(response.status, 200, path);
+    assert.match(response.headers.get("content-type"), type, path);
+  }
+  const manifest = await (await render("/manifest.webmanifest")).json();
+  assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
+  const sitemap = await (await render("/sitemap.xml")).text();
+  assert.match(sitemap, /<image:loc>https:\/\/lumis-sdk\.vercel\.app\/og\/quickstart<\/image:loc>/);
 });
 
 test("docs cover change evidence, SQL, competing roots, missing data and the evaluation caveats", async () => {

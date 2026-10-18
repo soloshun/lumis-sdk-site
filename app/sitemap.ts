@@ -11,12 +11,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: LAST_CONTENT_UPDATE,
       changeFrequency: "weekly",
       priority: 1,
+      images: [absoluteUrl("/og")],
     },
     ...docs.map((page) => ({
       url: absoluteUrl(page.slug === "overview" ? "/docs" : `/docs/${page.slug}`),
       lastModified: LAST_CONTENT_UPDATE,
       changeFrequency: "monthly" as const,
       priority: page.slug === "overview" ? 0.9 : page.group === "Start here" ? 0.8 : 0.7,
+      images: [absoluteUrl(`/og/${page.slug}`)],
     })),
   ];
 }

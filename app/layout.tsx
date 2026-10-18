@@ -31,7 +31,17 @@ export const metadata: Metadata = {
   formatDetection: { address: false, email: false, telephone: false },
   alternates: { canonical: "/" },
   manifest: "/manifest.webmanifest",
-  icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], shortcut: "/favicon.svg" },
+  // The Lumis symbol, shared with lumis.qadimlabs.com: SVG, a 48px ICO and a 192px PNG (search results
+  // prefer a multiple of 48), and the 180px home-screen icon.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
   robots: {
     index: !IS_PREVIEW,
     follow: true,
