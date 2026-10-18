@@ -11,14 +11,21 @@ Built with Next.js 16, React 19 and TypeScript, and deployed on Vercel.
 
 ## Content rules
 
-Everything on the site must be true of the published **`lumis-sdk` 0.1.0**:
+The main installation and API guides must be true of published **`lumis-sdk` 0.1.0**.
+The separately labelled `/docs/unreleased-maintenance` page documents a pinned dev snapshot,
+not capabilities of that PyPI wheel. A website content update is not a package release.
 
 - **Read-only.** Lumis has no remediation executor, no automatic rule learning and no hosted service.
 - **Experimental.** APIs may change before 1.0.
 - **Evaluated on one estate.** The only live evaluation is the GridCast reference estate: 15 injected failures, one model (DeepSeek v4 pro). Results come from the [research notes](https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md), exclude scenario N (a ground-truth leak), and always carry that caveat.
 - **Open source means the SDK only.** Do not write "built in the open", "built in public" or "no lock-in". The tests fail on those phrases.
 
-Sources of truth are the SDK's `README.md`, `docs/` and `CHANGELOG.md` on `main`. When the SDK changes, update these together and bump `CONTENT_UPDATED` in `lib/site.ts`:
+Published SDK reference links are pinned to `v0.1.0`. Unreleased references are pinned to the
+reviewed merge commit, never an unlabelled moving branch. The unreleased page, copy-as-Markdown,
+search entries and AI-readable exports retain the release boundary. Do not bump `SDK_VERSION`,
+add preview-only APIs to the quickstart or claim a new release until publication is verified.
+
+When the SDK changes, update these together and bump `CONTENT_UPDATED` in `lib/site.ts`:
 
 - the docs (`content/docs.ts`);
 - the home page;
@@ -38,10 +45,11 @@ npm test             # production build + smoke tests on port 4397
 
 `npm test` builds the site and checks the production server. It covers:
 
-- the home page and all 16 docs pages: status banner, canonical URLs and one `h1` each;
+- the home page and all 17 docs pages: status banner, canonical URLs and one `h1` each;
 - the palette, structured data, sitemap and robots;
 - legacy redirects, `llms.txt` / `llms-full.txt` and the social image;
 - the wording rules above.
+- published-versus-unreleased boundaries in the preview page, search and AI-readable exports.
 
 ## Where things live
 

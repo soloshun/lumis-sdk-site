@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Brand } from "./brand";
 import { ThemeToggle } from "./theme-toggle";
+import { DocsSearch } from "./docs-search";
 
 const GITHUB = "https://github.com/soloshun/lumis-sdk";
 const LUMIS = "https://lumis.qadimlabs.com";
@@ -71,6 +72,7 @@ export function DocsNav() {
         <div className="docs-topbar-inner">
           <Brand docs />
           <nav aria-label="Documentation utilities">
+            <DocsSearch />
             <ThemeToggle />
             <Link className="hide-sm" href="/">Home</Link>
             <a className="hide-sm" href={LUMIS} target="_blank" rel="noreferrer">Lumis.com ↗</a>

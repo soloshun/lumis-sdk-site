@@ -6,11 +6,14 @@ export type DocBlock =
   | { type: "list"; items: string[] }
   | { type: "table"; headers: string[]; rows: string[][] };
 export type DocSection = { id: string; title: string; blocks: DocBlock[] };
-export type DocPage = { slug: string; group: string; label: string; title: string; description: string; nested?: boolean; sections: DocSection[] };
+export type DocPage = { slug: string; group: string; label: string; title: string; description: string; nested?: boolean; channel?: "unreleased"; sections: DocSection[] };
 
 export const SDK_VERSION = "0.1.0";
 export const GITHUB_REPO = "https://github.com/soloshun/lumis-sdk";
-export const SOURCE_DOCS = `${GITHUB_REPO}/blob/main/docs`;
+export const SOURCE_DOCS = `${GITHUB_REPO}/blob/v${SDK_VERSION}/docs`;
+export const MAINTENANCE_REF = "64237434c754a17e0eb9625e84cfc606f3307e08";
+export const MAINTENANCE_DOCS = `${GITHUB_REPO}/blob/${MAINTENANCE_REF}/docs`;
+export const RELEASE_BOUNDARY = "Published installation guides describe PyPI 0.1.0. Unreleased maintenance describes a pinned development snapshot, not features available in that package. The next release version and date are not assigned.";
 export const COOKBOOKS = "https://github.com/soloshun/lumis-cookbooks/tree/main/gridcast";
 export const RESEARCH_NOTES = "https://github.com/soloshun/lumis-cookbooks/blob/main/gridcast/docs/research-notes.md";
 export const PAPER_URL = "https://arxiv.org/abs/2608.01955";
@@ -112,6 +115,7 @@ export const docs: DocPage[] = [
       ]},
       {id: "status", title: "Where the project is", blocks: [
         note("Experimental, version 0.1.0", "Lumis is research software. The APIs and YAML format may change before 1.0. It has been evaluated on one reference estate with one model family; treat results elsewhere as unknown until you measure them.", "amber"),
+        note("Maintenance merged, not released", "The next SDK changes are on dev, not in the PyPI package. Read [Unreleased maintenance](/docs/unreleased-maintenance) for the changes, a pinned preview install and remaining qualification. More changes can land before the next release.", "amber"),
         table(["", "Status"], [
           ["Release", "`lumis-sdk` 0.1.0 on PyPI (5 October 2026)"],
           ["Python", "3.11, 3.12 and 3.13"],
@@ -360,7 +364,7 @@ export const docs: DocPage[] = [
         p("Degraded facts (a capped log result, a sandbox probe) can guide a person or the investigator, but cannot satisfy a terminal check."),
       ]},
       {id: "window", title: "Time window and budgets", blocks: [
-        p("Queries run against the incident window, `started_at` to `ended_at`: Prometheus instant queries are evaluated at `ended_at`, and log, trace, workflow and SQL queries are bounded by the window. List queries in `initial_query_ids` to collect them before anything else runs."),
+        p("Queries run against the observation window, `started_at` to `ended_at`: these are a caller-selected lookback and observation cutoff, not measured fault onset or recovery. Prometheus instant queries are evaluated at `ended_at`, and log, trace, workflow and SQL queries are bounded by the window. Before triage, Lumis collects the de-duplicated union of `initial_query_ids` followed by every in-scope rule's `evidence_needed`. These reads, including failures, share `max_queries` with later agent observations; they are not model tool calls."),
         p("Triage and the investigator share one query budget (`budget.max_queries`). Repeated requests for the same query reuse the first result; failed queries are not retried invisibly."),
         source("configuration.md", "YAML reference"),
       ]},
@@ -419,6 +423,7 @@ export const docs: DocPage[] = [
         p("Only when triage is not sufficient and you opted in, with `--use-agent` on the CLI or `use_agent=True` in Python. It is one Pydantic AI agent with typed output, not a multi-agent system. It starts from the triage findings and the evidence already collected."),
       ]},
       {id: "tools", title: "What it can do", blocks: [
+        note("Published 0.1.0 tool surface", "The development snapshot adds named tools alongside inspect and probe, plus provisional candidate states. See [Unreleased maintenance](/docs/unreleased-maintenance#agent-and-receipts); the operation list below describes the published package.", "amber"),
         p("The investigator has two tools, `inspect` and `probe`. `inspect` has a fixed set of operations:"),
         table(["Operation", "What it allows"], [
           ["`catalog`", "List the registered query IDs, approved files and enabled capabilities."],
@@ -468,11 +473,12 @@ export const docs: DocPage[] = [
       {id: "hypotheses", title: "What makes an explanation testable", blocks: [
         table(["Field", "Purpose"], [
           ["`id`, `statement`", "A stable identity and a falsifiable explanation."],
-          ["`causal_path`", "Entities in the incident graph, starting where the fault originates."],
+          ["`causal_path`", "Proposed path of entities in the incident graph, starting at a candidate origin; not an established causal chain."],
           ["`evidence_needed`", "Registered query IDs whose facts cover the predictions and falsifiers."],
           ["`predictions`", "Facts expected if the explanation holds."],
           ["`falsifiers`", "Facts that would contradict it."],
         ]),
+        p("Catalog validation checks that path entities belong to the scoped graph and that registered queries cover each check. It does not validate connected edges or their direction between consecutive path entries. For example, [db, api] can pass membership validation without a db-to-api edge; it is still only a proposed explanation."),
       ]},
       {id: "assessment", title: "Assessment", blocks: [
         p("A hypothesis is `supported` only if every prediction is supported by a usable fact and no falsifier holds. Contradiction takes precedence. Missing, conflicting or degraded facts leave it `unresolved`."),
@@ -561,7 +567,7 @@ export const docs: DocPage[] = [
       {id: "files", title: "Incident and observation files", blocks: [
         code("json", '{\n  "id": "checkout-001",\n  "affected_entities": ["service:shop:checkout"],\n  "symptoms": ["Checkout p95 latency above 2s"],\n  "started_at": "2026-10-05T10:00:00Z",\n  "ended_at": "2026-10-05T10:20:00Z"\n}'),
         code("json", '[\n  {\n    "id": "obs-1",\n    "query_id": "checkout-up",\n    "entity_id": "service:shop:checkout",\n    "key": "up",\n    "value": 0,\n    "observed_at": "2026-10-05T10:20:00Z",\n    "source": "replay",\n    "retrieval_method": "snapshot-replay"\n  }\n]'),
-        p("Timestamps must include a timezone. Each observation must match a registered query's entity and key and fall inside the incident window."),
+        p("Timestamps must include a timezone. Each observation must match a registered query's entity and key and fall inside the observation window. `started_at` and `ended_at` are evidence-window bounds, not measured fault onset or recovery."),
         source("configuration.md", "YAML reference"),
       ]},
     ],
@@ -654,6 +660,7 @@ export const docs: DocPage[] = [
     description: "Configure OpenRouter, OpenAI, Anthropic or Gemini for the optional investigator, choose a model, and understand what has and has not been tested.",
     sections: [
       {id: "providers", title: "Providers", blocks: [
+        note("Published providers versus development", "This page describes the four providers in PyPI 0.1.0. [Unreleased maintenance](/docs/unreleased-maintenance#provider-integrations) adds a Pydantic AI Bedrock investigator and explicit Anthropic cache controls; those additions require the development snapshot for now.", "amber"),
         table(["Provider", "Default key variable", "Interface"], [
           ["`openrouter` (default)", "`OPENROUTER_API_KEY`", "Chat Completions with structured output"],
           ["`openai`", "`OPENAI_API_KEY`", "Responses API"],
@@ -717,6 +724,15 @@ export const docs: DocPage[] = [
       {id: "setup", title: "The estate and the protocol", blocks: [
         p(`GridCast is an open reference estate we built for this purpose: a synthetic electricity-demand forecaster with ten services on Kubernetes (kind), Prometheus, Loki, Tempo, Prefect and PostgreSQL, external weather and telemetry vendors, and changes made through GitOps. We injected fifteen different failures through ordinary channels (releases, configuration, rotated secrets, resource limits, a model promotion, vendor outages and silent data problems). Five of them were added later, specifically to be hard. Everything is public in the [GridCast cookbook](${COOKBOOKS}).`),
         p("For each failure the estate's own alerts opened one incident, which was then frozen: every system answered the same incident with the same evidence window. The ground truth was read only after all reports existed. A run counts as correct only if its top answer names the right component and the right mechanism."),
+        p("The harness waited for a quiet estate and a 20-minute cooldown before injecting each fault. After the first fresh alert, it allowed 120 seconds to settle, then pinned queries to one window: ten minutes before that alert through the freeze time. Model systems ran twice per scenario; rules ran five times. This controls the incident context, not every source of model or provider variability."),
+        diagram(`flowchart TD
+    ALERT["Inject fault → estate alert<br/>wait 120 seconds"]
+    FREEZE["Freeze one incident<br/>same alerts, entities and time window"]
+    RUN["Run each comparison system<br/>queries pinned to that window"]
+    REPORT["Save every report"]
+    TRUTH["Unseal ground truth<br/>only after reports exist"]
+    SCORE["Score the top-ranked answer<br/>component AND mechanism"]
+    ALERT --> FREEZE --> RUN --> REPORT --> TRUTH --> SCORE`, "Evaluation protocol: ground truth enters scoring, never the investigation input."),
       ]},
       {id: "systems", title: "What was compared", blocks: [
         table(["System", "What it gets"], [
@@ -727,6 +743,7 @@ export const docs: DocPage[] = [
           ["Lumis", "Triage, then the investigator, then mechanical assessment."],
         ]),
         p("Every model-based system used the same model: DeepSeek v4 pro through OpenRouter, reasoning effort high."),
+        p("The full ladder includes one additional rung: **one call plus verification**. It reuses the single-call answers, then Lumis fetches the registered query IDs each hypothesis names and checks predictions and falsifiers, with no new model call. The original one-call baseline is already partly checked, but only against its pre-collected facts (about 16–20 observations). This extra rung separates verification from the investigator's ability to ask a new question."),
       ]},
       {id: "results", title: "Results", blocks: [
         table(["", "Rules only", "Model, alert only", "Model + graph", "One call with evidence", "Lumis"], [
@@ -743,6 +760,31 @@ export const docs: DocPage[] = [
           "**A capable model with raw tools matched Lumis on the one clean scenario we could compare** (2 / 2 each), but needed about twice the tool calls and model requests, and its answer was unchecked free text.",
         ),
       ]},
+      {id: "reading-grade-cards", title: "Reading the grade cards", blocks: [
+        p("**A correct lead is not the same as an accepted conclusion.** Top-1 diagnosis accuracy asks whether the first-ranked component and mechanism are right, even if the system abstains. Conclusion precision asks how often an accepted conclusion is right. Component-only recall is weaker: the alert may already name the service that hurts, without revealing why."),
+        diagram(`flowchart TD
+    DRAFT["Evidence-fed one-call baseline<br/>9 conclusions · 8 correct<br/>top-1 diagnosis: 0.50"]
+    FETCH["Fetch named evidence<br/>check predictions and falsifiers<br/>no new model call"]
+    VERIFIED["After verification<br/>3 conclusions · 3 correct<br/>top-1 diagnosis: 0.50"]
+    DRAFT --> FETCH --> VERIFIED`, "Verification comparison: all 15 scenarios, two model runs each. These two rungs had no access to the leaked source file."),
+        p("Across all 15 scenarios, verification reduced the one-call system from nine conclusions (eight correct) to three (all correct), while top-1 diagnosis accuracy stayed at 0.50. Excluding N, both versions score 0.54 overall and 2 / 8 on the hard set. Checking a proposed explanation cannot supply an explanation the model never considered; the investigator's additional queries and change-record reads are a separate capability."),
+        p("The grades use a published, per-scenario regex rubric for mechanisms, rather than independent human causal adjudication. Mechanical support means that a hypothesis survives checks against collected observations; it is not proof that those observations are reliable or that the proposed cause is uniquely true."),
+      ]},
+      {id: "decoy-release", title: "A recent release is not automatically the cause", blocks: [
+        p("In scenario L, a harmless logging-only release preceded a telemetry historian silently stopping its demand exports. There were no errors. The graph helps distinguish the downstream symptom from an upstream dependency; the recent release is a candidate to test, not a reason to skip that investigation."),
+        diagram(`flowchart TD
+    HIST["Grid telemetry<br/>historian<br/>exports stop"]
+    ING["Ingestion"]
+    DB[("PostgreSQL")]
+    FEATURE["Feature<br/>service"]
+    PIPE["Forecast pipeline<br/>downstream alert"]
+    HIST -->|serves| ING
+    DB -->|serves| ING
+    DB -->|serves| FEATURE
+    FEATURE -->|serves| PIPE`, "Scenario L: a subset of the exported operational graph. Arrows mean provider serves consumer, not a proven causal chain."),
+        p("The graph-only model and Lumis each found the correct diagnosis in both L runs. In the Lumis run that saw the decoy release, that release was not part of the conclusion. Lumis still could not establish **why** the historian stopped: no query into the vendor's internals was available. A useful report keeps that boundary visible."),
+        p("Scenario K shows another distinction: both Lumis runs found a timeout lowered to 2 seconds while the vendor responded in about 4 seconds, and neither concluded. One ranked the configuration change first; the other ranked the vendor first. The strict grade is 1 / 2, even though both reports contained the relevant change for a person to review."),
+      ]},
       {id: "wrong", title: "What went wrong", blocks: [
         list(
           "**Our estate produced false alerts in the first run.** Two processes shared one telemetry identity and corrupted rate calculations. We fixed the estate and re-ran everything.",
@@ -751,10 +793,85 @@ export const docs: DocPage[] = [
           "**Rubric revisions.** The regex rubric that scores mechanisms was revised twice after we inspected outputs; each revision applied to every system.",
           "**Thirteen SDK defects**, from redaction masking decimals to a routing parameter that broke one provider, were found and fixed during the integration. They are the bulk of what changed before 0.1.0.",
         ),
+        p("For important mechanisms, use independent signals where possible. A fresh metric series reporting zero should not silently stand in for an observed zero; corroborate it with a separate measurement. More reasoning over the same faulty observation does not repair the sensor."),
       ]},
       {id: "limits", title: "Limits", blocks: [
         note("Read these numbers as a proof of concept", "One synthetic estate whose code and scenarios were written by the same team, one model family, two runs per system per scenario. GPT, Claude, Gemini and Grok models were not tested. Stronger models may raise every rung, including the alert-only baseline.", "amber"),
         p(`Every number, transcript and correction is in the [research notes](${RESEARCH_NOTES}). The estate, harness and evaluation were built with AI assistance (Claude Opus 5.5); the research design and most scenarios came from the author. Claude was not one of the systems evaluated.`),
+        p("There is no human baseline, and the mechanism labels still need human verification. With N excluded, one model outcome changes the overall score by about 3.6 percentage points (1 / 28). A clean rerun of N, other model families and independently reviewed labels are next checks, not completed results."),
+      ]},
+    ],
+  },
+  {
+    slug: "unreleased-maintenance", group: "Project", label: "Unreleased maintenance", title: "Unreleased maintenance",
+    description: "SDK-M01–SDK-M17 merged into dev, not released on PyPI: what changed, how to try the pinned snapshot, and what remains unverified.",
+    channel: "unreleased",
+    sections: [
+      {id: "release-status", title: "Merged is not released", blocks: [
+        note("Unreleased development snapshot", RELEASE_BOUNDARY, "amber"),
+        p(`SDK [PR #120](${GITHUB_REPO}/pull/120) merged into dev on 18 October 2026. This page documents snapshot [${MAINTENANCE_REF.slice(0, 7)}](${GITHUB_REPO}/commit/${MAINTENANCE_REF}), not everything that may land on dev later. The package metadata still says 0.1.0; a version string alone does not distinguish this checkout from the published wheel.`),
+        table(["Channel", "What to expect"], [
+          ["PyPI 0.1.0", "Published package. The quickstart and main API/provider pages describe this version."],
+          ["Pinned development snapshot", "Includes the maintenance below. Install explicitly from source in an isolated environment."],
+          ["Next release", "Not published, with no version or date assigned. Further reviewed changes can be batched first."],
+        ]),
+      ]},
+      {id: "changes", title: "What changed", blocks: [
+        table(["Maintenance", "Portable change"], [
+          ["M01–M03: receipts", "Safe failure reason codes, visible truncation/digests and cached failures that stay failures without another source read."],
+          ["M04–M09: authoring and documentation", "Correct provider list, observation-window wording, graph-validation limits, bounded advisory numeric-overlap warnings, upfront query budgeting and a contract glossary."],
+          ["M10–M11: agent evidence", "Named tools and an initial scoped catalog; bounded provisional candidate states and supporting/ruling-out evidence IDs after relevant tools."],
+          ["M12–M13: accounting and stopping", "Opt-in Anthropic cache controls, provider-reported cache token usage and initial/follow-up proposal limits."],
+          ["M14–M15: reports and instructions", "Cited Markdown rendering, clearer purpose/timing instructions and a synthetic healthy/no-fault regression."],
+          ["M16–M17: integrations and names", "Optional Pydantic AI Bedrock Converse investigator, plain display labels and investigate_incident aliases."],
+        ]),
+        p("These changes add no recovery executor, automatic learned rules, arbitrary endpoint tool or new filesystem authority. Supported candidates remain unconfirmed and require human review."),
+      ]},
+      {id: "try-preview", title: "Try the pinned snapshot", blocks: [
+        p("Use Python 3.11 or newer and a separate virtual environment. This explicitly installs unreleased source, not the PyPI wheel; Git is required. The agent and bedrock extras remain optional. Installing or running the offline scaffold does not invoke a model."),
+        code("bash", `python -m venv .venv-lumis-preview\nsource .venv-lumis-preview/bin/activate\npython -m pip install "lumis-sdk[agent,bedrock] @ git+${GITHUB_REPO}.git@${MAINTENANCE_REF}"\npython -m pip freeze\nlumis init --directory ./lumis-preview\nlumis incident --project ./lumis-preview/lumis.yaml \\\n  --incident ./lumis-preview/incident.json \\\n  --observations ./lumis-preview/observations.json --format markdown`),
+        p("On Windows, activate with `.venv-lumis-preview\\Scripts\\activate` instead. Record the installed VCS commit from `pip freeze`; `lumis --version` still prints 0.1.0. JSON remains the default output; Markdown is an explicit option."),
+        code("python", `import asyncio\nimport json\nfrom pathlib import Path\nfrom lumis_sdk.core import Evidence, Incident\nfrom lumis_sdk.runtime import YamlProject\n\nroot = Path("lumis-preview")\nproject = YamlProject.from_file(root / "lumis.yaml")\nevent = Incident.model_validate_json((root / "incident.json").read_text())\nfacts = tuple(Evidence.model_validate(row) for row in\n              json.loads((root / "observations.json").read_text()))\nreport = asyncio.run(project.investigate_incident(event, observations=facts))\nprint(report.markdown())`),
+        p("`investigate_incident` aliases `handle_incident`; both remain available. The older `investigate()` API already has a different, candidate-only contract and is not repurposed. Markdown rendering makes no model call, escapes untrusted text and links to evidence/receipt IDs. Patch text remains in JSON for separate manual review; it is never applied."),
+      ]},
+      {id: "agent-and-receipts", title: "Agent and receipt contracts", blocks: [
+        list(
+          "Named tools include evidence_query, graph_neighbourhood, changes, code_read, code_search, git_log, git_diff and register_hypothesis. Probe remains separate and legacy inspect stays compatible. All use the same scoped authority and budgets.",
+          "The initial catalog is in the first prompt; no catalog round trip is required. Provisional assessments use supported / contradicted / unresolved, not model confidence. assessments_truncated marks omitted state summaries; the final mechanical report is authoritative.",
+          "The initial proposal limit defaults to five and the follow-up allowance to three. Follow-up requires an attempt for every requested initial-round query; failed reads still mean unknown. The separate hard max_hypotheses defaults to five, so explicitly set it to eight for the full 5+3 allowance. Request, tool and token limits still apply.",
+          "Receipt reason_code distinguishes invalid_request, access_denied, source_unavailable, deadline_exceeded, query_budget and proposal_limit without copying raw source exception text. A cached failure retains its status and points to cached_from; a successful empty result stays ok with [], never a made-up zero.",
+          "digest hashes full safe UTF-8 output before truncation; output_digest hashes the returned output. original_characters and truncated expose visibility. Cached receipts hash their cached visible text; follow cached_from for the original full-output digest. A hash does not prove the model saw all of the text.",
+          "Numeric prediction/falsifier overlaps warn but do not reject candidates or change assessment. Catalog validation checks graph membership and registered query coverage, not connected edges or their direction. Supported remains mechanical support, not causal proof.",
+        ),
+        code("yaml", "investigator:\n  budget:\n    initial_candidates: 5\n    followup_candidates: 3\nbudget:\n  max_hypotheses: 8  # explicit opt-in to the full 5+3 allowance"),
+      ]},
+      {id: "provider-integrations", title: "Provider integrations — preview only", blocks: [
+        p("Bedrock uses Pydantic AI's BedrockConverseModel and BedrockProvider. The SDK supplies an owned boto3 client for timeouts, one transport attempt and cleanup; inference stays in Pydantic AI's integration. Credentials come from the standard AWS credential chain, never YAML keys. aws_region is optional when AWS configuration supplies it."),
+        code("yaml", "models:\n  provider: bedrock\n  model: YOUR_CONVERSE_TOOL_CAPABLE_MODEL_OR_INFERENCE_PROFILE_ID\n  aws_region: us-east-1"),
+        p("Bedrock is available to `handle_incident(use_agent=True)` and its alias, not the candidate-only baseline. A real run needs operator-approved credentials, region, model access and IAM permissions and may incur charges. `doctor` does not validate AWS access. API-key, reasoning and Anthropic cache options are rejected for Bedrock."),
+        code("yaml", "models:\n  provider: anthropic\n  model: YOUR_TOOL_CAPABLE_MODEL_ID\n  cache_instructions: 5m\n  cache_tool_definitions: true"),
+        p("The Anthropic options map to Pydantic AI's cache settings and accept true, false, 5m or 1h. Other providers reject them. Reports record cache_read_tokens and cache_write_tokens; the Python-only cache_read_share property divides cached-read tokens by input tokens, returning zero for no input. Offline accounting tests do not establish live cache hits or savings."),
+        p("Groq, Mistral, Cohere, xAI, Hugging Face and Cerebras are provider candidates, not selectable SDK YAML options yet. MCP tool servers and DBOS workflow execution remain separate design proposals."),
+      ]},
+      {id: "verification", title: "Verified versus still open", blocks: [
+        table(["Evidence", "Boundary"], [
+          ["247 local tests passed; 8 opt-in skips", "Offline/synthetic contracts. Seven skipped Docker cases passed in the separate qualification suite; live PostgreSQL was not run."],
+          ["45 Docker-enabled agent/safety tests passed", "Isolation, cleanup and agent conformance; not production incident accuracy."],
+          ["Eight PR checks passed, including Python 3.11–3.13", "Quality/build, security, dependency/license and sandbox checks on the merged head."],
+          ["Stubbed Pydantic AI Bedrock Converse; mocked Anthropic cache wire", "Construction, serialization, token accounting and resource ownership; no paid AWS/model request."],
+          ["Four playground Markdown snapshots and a no-fault control", "Readable report contracts, not an independent model-quality study."],
+        ]),
+        list(
+          "Still open: GridCast tool/request/token/accuracy comparisons for the changed agent loop.",
+          "Still open: live provider cache minimums, TTL, cache-read/write counts and billed savings.",
+          "Still open: GridCast recency/no-fault controls for the instruction changes.",
+          "Still open: operator-approved Bedrock IAM, account, region and model qualification.",
+        ),
+        p(`See the pinned [verification handoff](${MAINTENANCE_DOCS}/maintenance/verification-2026-10-11.md), [per-item maintenance records](${MAINTENANCE_DOCS}/maintenance/poc-review-notes.md), [model reference](${MAINTENANCE_DOCS}/models.md) and [glossary](${MAINTENANCE_DOCS}/glossary.md). The handoff records the original pre-merge review; PR #120 now supplies the merge and hosted-CI evidence.`),
+      ]},
+      {id: "release-plan", title: "When to release", blocks: [
+        p("A documentation-site update does not require a Python package release. Keep these additions under Unreleased while further changes are planned. Once scope is settled, review API/configuration compatibility, choose the next version, freeze a candidate and rerun the package/release gates. Do not publish changed code again as 0.1.0."),
+        p("After publication, update the package version, stable examples, provider list and source references together, then promote the relevant development documentation. Do not promise a release number or date before that decision."),
       ]},
     ],
   },
@@ -763,6 +880,7 @@ export const docs: DocPage[] = [
     description: "Where Lumis SDK is, what comes next, how to migrate from earlier versions, how to get in touch, and the research it comes from.",
     sections: [
       {id: "status", title: "Status", blocks: [
+        note("Next release is still open", "SDK-M01–SDK-M17 are merged into dev, but not published. [Unreleased maintenance](/docs/unreleased-maintenance) tracks that snapshot and its remaining live checks. Further changes can be batched before a version is chosen.", "amber"),
         p("Lumis SDK 0.1.0 is the first release of the current architecture. It covers the investigation part of a larger research direction: read-only incident context, deterministic triage, one optional investigator, mechanical assessment and audit records. It is experimental: useful for investigation and research today, not a production-hardened or generally validated tool."),
         table(["Done", "Next"], [
           ["YAML-led graph and discovery; Kubernetes, Prometheus, Loki, Tempo, Prefect, SQL and change sources", "Evaluation with other model families"],
@@ -811,6 +929,8 @@ export function toMarkdown(page: DocPage) {
       else lines.push(`| ${block.headers.join(" | ")} |`, `| ${block.headers.map(() => "---").join(" | ")} |`, ...block.rows.map(row => `| ${row.join(" | ")} |`), "");
     }
   }
-  lines.push("---", "", `Lumis SDK ${SDK_VERSION} · ${GITHUB_REPO}`);
+  lines.push("---", "", page.channel === "unreleased"
+    ? `Unreleased development snapshot ${MAINTENANCE_REF} · Published PyPI version: ${SDK_VERSION} · ${GITHUB_REPO}`
+    : `Lumis SDK ${SDK_VERSION} · ${GITHUB_REPO}`);
   return lines.join("\n");
 }

@@ -95,14 +95,14 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
         </div>
       </aside>
       <main className="docs-main" id="main">
-        <MobileDocSelect current={page.slug} options={groups.flatMap(({pages}) => pages.map((item) => ({ slug: item.slug, label: `${item.group} / ${item.label}` })))} />
+        <MobileDocSelect current={page.slug} options={groups.flatMap(({group, pages}) => pages.map((item) => ({ slug: item.slug, label: item.label, group })))} />
         <article className="docs-article">
           <header>
             <p className="docs-breadcrumb">{page.group}</p>
             <h1>{page.title}</h1>
             <p>{page.description}</p>
             <div className="docs-page-meta">
-              <span>v{SDK_VERSION} · experimental</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
+              <span>{page.channel === "unreleased" ? "Unreleased · SDK dev" : `v${SDK_VERSION} · experimental`}</span><span>Python 3.11+</span><span>Updated {CONTENT_UPDATED}</span>
               <CopyMarkdown markdown={toMarkdown(page)} />
             </div>
           </header>

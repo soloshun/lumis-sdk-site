@@ -1,4 +1,4 @@
-import { SDK_VERSION, docs } from "@/content/docs";
+import { SDK_VERSION, RELEASE_BOUNDARY, docs } from "@/content/docs";
 import { SITE_ORIGIN } from "@/lib/site";
 
 export const dynamic = "force-static";
@@ -18,6 +18,7 @@ export function GET() {
     `> Lumis SDK (${SDK_VERSION}, experimental) is an Apache-2.0 Python SDK for evidence-grounded incident investigation. It prepares an incident-scoped operational graph, runs deterministic checks first, optionally invokes one bounded tool-using investigator, mechanically assesses falsifiable explanations against evidence it collected itself, and returns a report for human review. It is read-only: it never acts on systems.`,
     "",
     `Install: pip install "lumis-sdk[http,agent]" (PyPI, version ${SDK_VERSION}). The older 0.1.0rc1 upload is a different architecture.`,
+    `Release boundary: ${RELEASE_BOUNDARY} See ${origin}/docs/unreleased-maintenance. Do not use its APIs or extras as published-0.1.0 examples.`,
     `Repository: https://github.com/soloshun/lumis-sdk (Apache-2.0). The SDK is the open-source proof of concept of Lumis' investigation core; other Lumis products and services are separate and not necessarily open source.`,
     `Primary API: YamlProject.handle_incident / lumis incident (add --use-agent to enable the investigator).`,
     `Conclusions: supported_diagnosis (supported candidates agree on one root cause), insufficient_evidence, requires_human_expert. Reports always require human review; truth_state is always unconfirmed_hypothesis.`,
